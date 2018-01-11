@@ -1,0 +1,11 @@
+# common requirementes
+unidecode
+pandas
+
+# dedupe requirements
+dedupe
+#Unidecode==0.4.16
+future
+
+# python record linkage toolkit requirements
+recordlinkage
