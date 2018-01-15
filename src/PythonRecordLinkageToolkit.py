@@ -5,7 +5,7 @@ import re
 import csv
 
 
-baseDir = '..\\Data\\AbtBuySmall\'
+baseDir = '..\\Data\\AbtBuySmall\\'
 file1 = baseDir + 'file1.csv'
 file2 = baseDir + 'file2.csv'
 output_file = baseDir + 'prlt\\data_matching_output.csv'
