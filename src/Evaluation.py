@@ -5,10 +5,11 @@ import os
 baseDir = '..\\data\\AbtBuy\\'
 
 
-def readFile(filename):
+def read_file(filename):
     return pd.read_csv(filename)
 
-def readPerfectMatch(filename):
+
+def read_perfect_match(filename):
     result = {}
     data = pd.read_csv(filename)
     for index, row in data.iterrows():
@@ -19,15 +20,13 @@ def readPerfectMatch(filename):
     return result
 
 
-def evaluate(match_dir, perfect_match):
+def evaluate_file(match_file, perfect_match):
 
-    matchFile = baseDir + match_dir + "\\Mapping.csv"
-
-    if not os.path.isfile(matchFile):
+    if not os.path.isfile(match_file):
         return
 
-    print("Processing " + match_dir)
-    match = readFile(baseDir + match_dir + "\\Mapping.csv")
+    print("Processing " + match_file)
+    match = read_file(match_file)
 
     result = {
         "perfect_match_total": len(perfect_match.keys()),
@@ -37,11 +36,11 @@ def evaluate(match_dir, perfect_match):
 
     # alle matches durchgehen
     for index, row in match.iterrows():
-        id_file_1 = row.idFile1
+        id_file_1 = row[0]
 
         # passenden eintrag in der perfect match tabelle suchen
         if id_file_1 in perfect_match:
-            if row.idFile2 in perfect_match[id_file_1]:
+            if row[1] in perfect_match[id_file_1]:
                 result["match_correct"] += 1
             else:
                 result["match_incorrect"] += 1
@@ -52,9 +51,5 @@ def evaluate(match_dir, perfect_match):
     print("Missing Matches {0}".format(result["perfect_match_total"] - result["match_correct"]))
     print("")
 
-
 # -------------------------------- Main ------------------------
 
-perfectMatch = readPerfectMatch(baseDir + "PerfectMapping.csv")
-evaluate("dedupe", perfectMatch)
-evaluate("prlt", perfectMatch)
