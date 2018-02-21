@@ -4,20 +4,20 @@ from unidecode import unidecode
 import re
 from datetime import datetime
 from Evaluation import evaluate_file, read_perfect_match
-from Tools import pre_process_string
+from Tools import pre_process_string, load_perfect_match_as_index
 
 start_time = datetime.now()
 
 baseDir = '..\\Data\\AbtBuy\\'
-file1 = baseDir + 'file1.csv'
-file2 = baseDir + 'file2.csv'
-perfectMatchFile = baseDir + 'PerfectMapping.csv'
-result_file_template = baseDir + 'prlt\\result_{}.csv'
+filename_1 = baseDir + 'file1.csv'
+filename_2 = baseDir + 'file2.csv'
+filename_perfect_match = baseDir + 'PerfectMapping.csv'
+filename_result_template = baseDir + 'prlt\\result_{}.csv'
 
-perfect_match_for_eval = read_perfect_match(perfectMatchFile)
+perfect_match_for_eval = read_perfect_match(filename_perfect_match)
 
 
-def read_file(filename):
+def load_file_as_df(filename):
     """
     Loads a Data File. It is expected, that the file contains the following columns:
     unique_id (the identifier column), title, description
@@ -27,20 +27,6 @@ def read_file(filename):
     data["title"] = data["title"].apply(lambda x: pre_process_string(x))
     data["description"] = data["description"].apply(lambda x: pre_process_string(x))
     return data
-
-
-def read_perfect_match():
-    """
-    Creates a MultiIndex based on the perfect mapping file
-    """
-    # loading perfectMapping File
-    pm = pd.read_csv(perfectMatchFile, encoding="iso-8859-1", engine='c', skipinitialspace=True)
-    # create a list of tuples
-    idx_tuples = []
-    for index, row in pm.iterrows():
-        idx_tuples.append((row["idFile1"], row["idFile2"]))
-    # return as multiIndex
-    return pd.MultiIndex.from_tuples(idx_tuples, names=["id1", "id2"])
 
 
 def train_supervised_classifier(classifier):
@@ -83,7 +69,7 @@ def predict_and_save(classifier, filename_key):
     Uses the trained classifier to classify the features and save them as file
     using the result_file_template by adding the filename_key
     """
-    filename = result_file_template.format(filename_key)
+    filename = filename_result_template.format(filename_key)
     result = classifier.predict(features)
     pd.DataFrame(features, result).to_csv(filename)
 
@@ -94,9 +80,9 @@ def predict_and_save(classifier, filename_key):
 # ------------------ Main ---------------
 
 print("Load Files")
-dfFile1 = read_file(file1)
-dfFile2 = read_file(file2)
-idxPM = read_perfect_match()
+dfFile1 = load_file_as_df(filename_1)
+dfFile2 = load_file_as_df(filename_2)
+idxPM = load_perfect_match_as_index(filename_perfect_match)
 
 print("Indexing")
 indexer = rl.SortedNeighbourhoodIndex(on='title', window=9)

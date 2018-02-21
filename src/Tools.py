@@ -1,3 +1,4 @@
+import pandas as pd
 from unidecode import unidecode
 import re
 
@@ -23,3 +24,18 @@ def pre_process_string(value):
     if not value:
         value = None
     return value
+
+
+def load_perfect_match_as_index(filename):
+    """
+    Creates a MultiIndex based on the perfect mapping file
+    Expects the record id of the first file in the first column and the record id of the secord file in the second column
+    """
+    # loading perfectMapping File
+    pm = pd.read_csv(filename, encoding="iso-8859-1", engine='c', skipinitialspace=True)
+    # create a list of tuples
+    idx_tuples = []
+    for index, row in pm.iterrows():
+        idx_tuples.append((row[0], row[1]))
+    # return as multiIndex
+    return pd.MultiIndex.from_tuples(idx_tuples, names=["id1", "id2"])
