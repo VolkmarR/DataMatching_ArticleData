@@ -4,6 +4,7 @@ from unidecode import unidecode
 import re
 from datetime import datetime
 from Evaluation import evaluate_file, read_perfect_match
+from Tools import pre_process_string
 
 start_time = datetime.now()
 
@@ -15,27 +16,6 @@ result_file_template = baseDir + 'prlt\\result_{}.csv'
 
 perfect_match_for_eval = read_perfect_match(perfectMatchFile)
 
-def preprocess(column):
-    """
-    Do a little bit of data cleaning with the help of Unidecode and Regex.
-    Things like casing, extra spaces, quotes and new lines can be ignored.
-    """
-    if type(column) in (float, int):
-        column = ""
-
-    column = unidecode(column)
-    column = re.sub('\n', ' ', column)
-    column = re.sub('-', '', column)
-    column = re.sub('/', ' ', column)
-    column = re.sub("'", '', column)
-    column = re.sub(",", '', column)
-    column = re.sub(":", ' ', column)
-    column = re.sub('  +', ' ', column)
-    column = column.strip().strip('"').strip("'").lower().strip()
-    if not column:
-        column = None
-    return column
-
 
 def read_file(filename):
     """
@@ -44,8 +24,8 @@ def read_file(filename):
     """
     data = pd.read_csv(filename, encoding="iso-8859-1", engine='c', skipinitialspace=True, index_col="unique_id")
     # call the preprocessing method on the 2 columns title and description
-    data["title"] = data["title"].apply(lambda x: preprocess(x))
-    data["description"] = data["description"].apply(lambda x: preprocess(x))
+    data["title"] = data["title"].apply(lambda x: pre_process_string(x))
+    data["description"] = data["description"].apply(lambda x: pre_process_string(x))
     return data
 
 
@@ -121,6 +101,7 @@ idxPM = read_perfect_match()
 print("Indexing")
 indexer = rl.SortedNeighbourhoodIndex(on='title', window=9)
 pairs = indexer.index(dfFile1, dfFile2)
+
 
 print("Comparing")
 compare_cl = rl.Compare()
