@@ -2,54 +2,50 @@ import csv
 import pandas as pd
 import os
 
-baseDir = '..\\data\\AbtBuy\\'
+
+def evaluate_match_file(match_filename, perfect_match_index):
+    """
+    evaluates the found matches using the perfect_match_index
+    :param match_filename: match dataframe.
+    :param perfect_match_index: multindex containing the perfect match id's
+    :return: a dictionary containing "perfect_match_total", "match_correct", "match_incorrect"
+    """
+    if not os.path.isfile(match_filename):
+        return {}
+
+    match = pd.read_csv(match_filename, index_col=[0, 1])
+
+    return evaluate_match_index(match.index, perfect_match_index)
 
 
-def read_file(filename):
-    return pd.read_csv(filename)
+def evaluate_match_index(match_index, perfect_match_index):
+    """
+    evaluates the found matches using the perfect_match_index
+    :param match_index: multiindex containing the perfect match id's
+    :param perfect_match_index: multiindex containing the perfect match id's
+    :return: a dictionary containing "perfect_match_total", "match_correct", "match_incorrect"
+    """
 
+    correct = (match_index & perfect_match_index).size
 
-def read_perfect_match(filename):
-    result = {}
-    data = pd.read_csv(filename)
-    for index, row in data.iterrows():
-        if row.idFile1 in result:
-            result[row.idFile1].append(row.idFile2)
-        else:
-            result[row.idFile1] = [row.idFile2]
+    result = {
+        "perfect_match_total": perfect_match_index.size,
+        "match_correct": correct,
+        "match_incorrect": match_index.size - correct,
+        "missing_matches": perfect_match_index.size - correct,
+    }
+
     return result
 
 
-def evaluate_file(match_file, perfect_match):
-
-    if not os.path.isfile(match_file):
+def print_evaluate_result(result):
+    if result == {}:
         return
-
-    print("Processing " + match_file)
-    match = read_file(match_file)
-
-    result = {
-        "perfect_match_total": len(perfect_match.keys()),
-        "match_correct": 0,
-        "match_incorrect": 0
-    }
-
-    # alle matches durchgehen
-    for index, row in match.iterrows():
-        id_file_1 = row[0]
-
-        # passenden eintrag in der perfect match tabelle suchen
-        if id_file_1 in perfect_match:
-            if row[1] in perfect_match[id_file_1]:
-                result["match_correct"] += 1
-            else:
-                result["match_incorrect"] += 1
-
     print("Correct Matches {0}".format(result["match_correct"]))
     print("Incorrect Matches {0}".format(result["match_incorrect"]))
     print("Perfect Matches Total {0}".format(result["perfect_match_total"]))
-    print("Missing Matches {0}".format(result["perfect_match_total"] - result["match_correct"]))
+    print("Missing Matches {0}".format(result["missing_matches"]))
     print("")
 
-# -------------------------------- Main ------------------------
+
 
