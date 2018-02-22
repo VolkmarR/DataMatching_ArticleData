@@ -1,5 +1,6 @@
 import recordlinkage as rl
 import pandas as pd
+import random as rnd
 from datetime import datetime
 from Evaluation import evaluate_match_index, print_evaluate_result
 from Tools import pre_process_string, load_perfect_match_as_index
@@ -66,16 +67,39 @@ def predict_and_save(classifier, filename_key):
     print_evaluate_result(evaluate_match_index(result, idxPM))
 
 
+def create_golden_pairs(max_count):
+    """
+    Creates a sample of the features containing max_count matches and
+    max_count distincts
+    :return: golden_pair_df, golden_pair_matches_index
+    """
+    set_match = set()
+    set_distinct = set()
+
+    while True:
+        key = rnd.choice(features.index)
+        is_match = key in idxPM
+        if is_match and len(set_match) < max_count:
+            set_match.add(key)
+        elif not is_match and len(set_distinct) < max_count:
+            set_distinct.add(key)
+
+        if len(set_match) == max_count and len(set_distinct) == max_count:
+            break
+
+    res_pairs = pd.DataFrame(features, pd.MultiIndex.from_tuples(list(set().union(set_match, set_distinct))))
+    res_match = pd.MultiIndex.from_tuples(list(set_match))
+    return res_pairs, res_match
+
 # ------------------ Main ---------------
 
 start_time = datetime.now()
 
-baseDir = '..\\Data\\AbtBuySmall\\'
+baseDir = '..\\Data\\AbtBuy\\'
 filename_1 = baseDir + 'file1.csv'
 filename_2 = baseDir + 'file2.csv'
 filename_perfect_match = baseDir + 'PerfectMapping.csv'
 filename_result_template = baseDir + 'prlt\\result_{}.csv'
-
 
 print("Load Files")
 dfFile1 = load_file_as_df(filename_1)
@@ -94,9 +118,10 @@ features = compare_cl.compute(pairs, dfFile1, dfFile2)
 
 
 print("Creating training data")
-golden_pairs = features[0:1500]
-golden_matches_index = golden_pairs.index & idxPM
+#golden_pairs = features[0:15000]
+#golden_matches_index = golden_pairs.index & idxPM
 
+golden_pairs, golden_matches_index = create_golden_pairs(25)
 # classification
 
 print("Classification")
