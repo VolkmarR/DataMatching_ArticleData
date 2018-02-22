@@ -38,9 +38,14 @@ def evaluate_match_index(match_index, perfect_match_index):
     return result
 
 
-def print_evaluate_result(result):
+def print_evaluate_result(result, title=""):
     if result == {}:
         return
+
+    if title != "":
+        print(title)
+        print("--------------------------")
+
     print("Correct Matches {0}".format(result["match_correct"]))
     print("Incorrect Matches {0}".format(result["match_incorrect"]))
     print("Perfect Matches Total {0}".format(result["perfect_match_total"]))
