@@ -1,6 +1,7 @@
 import pandas as pd
 from unidecode import unidecode
 import re
+import os
 
 class Config:
     def __init__(self, base_dir):
@@ -60,3 +61,10 @@ def load_file_as_df(filename, preprocessing_fieldnames):
             data[fieldname] = data[fieldname].apply(lambda x: pre_process_string(x))
 
     return data
+
+
+def ensure_directories(filename):
+    """
+    creates the directories used in the filename, if they don't exist
+    """
+    os.makedirs(os.path.dirname(filename), exist_ok=True)
