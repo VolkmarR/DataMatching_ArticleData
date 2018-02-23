@@ -45,3 +45,18 @@ def load_perfect_match_as_index(filename):
         idx_tuples.append((row[0], row[1]))
     # return as multiIndex
     return pd.MultiIndex.from_tuples(idx_tuples, names=["id1", "id2"])
+
+
+def load_file_as_df(filename, preprocessing_fieldnames):
+    """
+    Loads a Data File. It is expected, that the file contains the following columns:
+    unique_id (the identifier column), title, description
+    """
+    data = pd.read_csv(filename, encoding="iso-8859-1", engine='c', skipinitialspace=True, index_col=[0])
+    # call the preprocessing method on the 2 columns title and description
+
+    if preprocessing_fieldnames:
+       for fieldname in preprocessing_fieldnames:
+            data[fieldname] = data[fieldname].apply(lambda x: pre_process_string(x))
+
+    return data

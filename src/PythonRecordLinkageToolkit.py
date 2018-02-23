@@ -3,19 +3,7 @@ import pandas as pd
 import random as rnd
 from datetime import datetime
 from Evaluation import evaluate_match_index, print_evaluate_result
-from Tools import pre_process_string, load_perfect_match_as_index, Config
-
-
-def load_file_as_df(filename):
-    """
-    Loads a Data File. It is expected, that the file contains the following columns:
-    unique_id (the identifier column), title, description
-    """
-    data = pd.read_csv(filename, encoding="iso-8859-1", engine='c', skipinitialspace=True, index_col=[0])
-    # call the preprocessing method on the 2 columns title and description
-    data["title"] = data["title"].apply(lambda x: pre_process_string(x))
-    data["description"] = data["description"].apply(lambda x: pre_process_string(x))
-    return data
+from Tools import load_perfect_match_as_index, load_file_as_df, Config
 
 
 def train_supervised_classifier(classifier):
@@ -101,8 +89,8 @@ config = Config('..\\Data\\AbtBuy\\')
 filename_result_template = config.base_dir + 'prlt\\result_{}.csv'
 
 print("Load Files")
-dfFile1 = load_file_as_df(config.filename_1)
-dfFile2 = load_file_as_df(config.filename_2)
+dfFile1 = load_file_as_df(config.filename_1, ["title", "description"])
+dfFile2 = load_file_as_df(config.filename_2, ["title", "description"])
 idxPM = load_perfect_match_as_index(config.filename_perfect_match)
 
 print("Indexing")
