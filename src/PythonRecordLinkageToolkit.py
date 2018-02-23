@@ -113,6 +113,7 @@ pairs = indexer.index(dfFile1, dfFile2)
 print("Comparing")
 compare_cl = rl.Compare()
 compare_cl.string('title', 'title', label='title', method='damerau_levenshtein', missing_value=0)
+compare_cl.string('title', 'title', label='title_cos', method='cosine', missing_value=0)
 compare_cl.string('description', 'description', label='description', method='cosine', missing_value=0)
 features = compare_cl.compute(pairs, dfFile1, dfFile2)
 
