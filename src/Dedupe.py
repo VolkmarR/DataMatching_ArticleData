@@ -34,10 +34,15 @@ def readData(filename):
     return data_d
 
 
-def descriptions():
+def build_corpus(fieldname):
+    # returns a list of all not empty values of the field (used by the text comparer to build the list of rare words)
+    corpus_set = []
     for dataset in (data_1, data_2):
-        for item in dataset.values():
-            yield item['description']
+        for row in dataset.values():
+            if row[fieldname]:
+                corpus_set.append(row[fieldname])
+    return corpus_set
+
 
 def count_matches(deduper):
     # Returns the number of match training pairs
@@ -111,12 +116,24 @@ index_perfect_match = load_perfect_match_as_index(filename_perfect_match)
 #
 # Notice how we are telling the linker to use a custom field comparator
 # for the 'price' field.
+
+# build the Corpus for the cosine similarity metric using the descriptions
+# These values are  used to create a list of rare words
+corpus = build_corpus("description")
+
+"""
 fields = [
     {'field': 'title', 'type': 'String'},
     {'field': 'title', 'type': 'Text', 'corpus': descriptions()},
     {'field': 'description', 'type': 'Text',
      'has missing': True, 'corpus': descriptions()},
     {'field': 'price', 'type': 'Price', 'has missing': True}]
+"""
+fields = [
+    {'field': 'title', 'type': 'String'},
+    {'field': 'title', 'type': 'Text', 'corpus': corpus},
+    {'field': 'description', 'type': 'Text', 'has missing': True, 'corpus': corpus}]
+
 
 # Create a new linker object and pass our data model to it.
 linker = dedupe.RecordLink(fields)
@@ -130,7 +147,7 @@ linker.sample(data_1, data_2, 15000)
 print('starting active labeling...')
 
 # dedupe.consoleLabel(linker)
-train_with_perfect_match(linker, 5, index_perfect_match)
+train_with_perfect_match(linker, 10, index_perfect_match)
 
 linker.train()
 
