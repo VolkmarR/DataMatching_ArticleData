@@ -2,6 +2,12 @@ import pandas as pd
 from unidecode import unidecode
 import re
 
+class Config:
+    def __init__(self, base_dir):
+        self.base_dir = base_dir
+        self.filename_1 = base_dir + 'file1.csv'
+        self.filename_2 = base_dir + 'file2.csv'
+        self.filename_perfect_match = base_dir + 'PerfectMapping.csv'
 
 def pre_process_string(value):
     """

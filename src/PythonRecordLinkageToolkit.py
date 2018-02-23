@@ -3,7 +3,7 @@ import pandas as pd
 import random as rnd
 from datetime import datetime
 from Evaluation import evaluate_match_index, print_evaluate_result
-from Tools import pre_process_string, load_perfect_match_as_index
+from Tools import pre_process_string, load_perfect_match_as_index, Config
 
 
 def load_file_as_df(filename):
@@ -91,20 +91,19 @@ def create_golden_pairs(max_count):
     res_match = pd.MultiIndex.from_tuples(list(set_match))
     return res_pairs, res_match
 
+
 # ------------------ Main ---------------
 
 start_time = datetime.now()
 
-baseDir = '..\\Data\\AbtBuy\\'
-filename_1 = baseDir + 'file1.csv'
-filename_2 = baseDir + 'file2.csv'
-filename_perfect_match = baseDir + 'PerfectMapping.csv'
-filename_result_template = baseDir + 'prlt\\result_{}.csv'
+# init the configuration
+config = Config('..\\Data\\AbtBuy\\')
+filename_result_template = config.base_dir + 'prlt\\result_{}.csv'
 
 print("Load Files")
-dfFile1 = load_file_as_df(filename_1)
-dfFile2 = load_file_as_df(filename_2)
-idxPM = load_perfect_match_as_index(filename_perfect_match)
+dfFile1 = load_file_as_df(config.filename_1)
+dfFile2 = load_file_as_df(config.filename_2)
+idxPM = load_perfect_match_as_index(config.filename_perfect_match)
 
 print("Indexing")
 indexer = rl.SortedNeighbourhoodIndex(on='title', window=9)
@@ -119,8 +118,8 @@ features = compare_cl.compute(pairs, dfFile1, dfFile2)
 
 
 print("Creating training data")
-#golden_pairs = features[0:15000]
-#golden_matches_index = golden_pairs.index & idxPM
+# golden_pairs = features[0:15000]
+# golden_matches_index = golden_pairs.index & idxPM
 
 golden_pairs, golden_matches_index = create_golden_pairs(25)
 # classification

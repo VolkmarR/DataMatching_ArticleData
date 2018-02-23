@@ -5,17 +5,17 @@ This code demonstrates how to use RecordLink with two comma separated
 values (CSV) files. We have listings of products from two different
 online stores. The task is to link products between the datasets.
 
-The output will be a CSV with our linkded results.
+The output will be a CSV with our linked results.
 
 """
 import csv
 import logging
 import dedupe
-from Tools import pre_process_string, load_perfect_match_as_index
+from Tools import pre_process_string, load_perfect_match_as_index, Config
 from Evaluation import evaluate_match_file, print_evaluate_result
 
 
-def readData(filename):
+def load_data(filename):
     """
     Read in our data from a CSV file and create a dictionary of records, 
     where the key is a unique record ID.
@@ -23,8 +23,8 @@ def readData(filename):
 
     data_d = {}
 
-    with open(filename) as f:
-        reader = csv.DictReader(f)
+    with open(filename) as csv_file:
+        reader = csv.DictReader(csv_file)
         for i, row in enumerate(reader):
             clean_row = dict([(k, pre_process_string(v)) for (k, v) in row.items()])
             if clean_row['price']:
@@ -95,19 +95,16 @@ def train_with_perfect_match(deduper, max_count, idx_perfect_match):
 
 # Setup
 
-baseDir = '..\\data\\AbtBuy\\'
-filename_1 = baseDir + 'file1.csv'
-filename_2 = baseDir + 'file2.csv'
-filename_perfect_match = baseDir + 'PerfectMapping.csv'
-filename_result = baseDir + 'dedupe\\result.csv'
+config = Config('..\\Data\\AbtBuy\\')
+filename_result = config.base_dir + 'dedupe\\result.csv'
 
 logging.getLogger().setLevel(logging.WARNING)
 
 # Loading Data
 print('importing data ...')
-data_1 = readData(filename_1)
-data_2 = readData(filename_2)
-index_perfect_match = load_perfect_match_as_index(filename_perfect_match)
+data_1 = load_data(config.filename_1)
+data_2 = load_data(config.filename_2)
+index_perfect_match = load_perfect_match_as_index(config.filename_perfect_match)
 
 # ## Training
 
