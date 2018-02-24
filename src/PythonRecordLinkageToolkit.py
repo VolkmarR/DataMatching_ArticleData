@@ -98,7 +98,7 @@ indexer = rl.SortedNeighbourhoodIndex(on='title', window=9)
 #indexer = rl.FullIndex()
 pairs_index = indexer.index(dfFile1, dfFile2)
 
-print("Comparing")
+print("Comparing {0} Pairs".format(pairs_index.size))
 compare_cl = rl.Compare()
 compare_cl.string('title', 'title', label='title', method='damerau_levenshtein', missing_value=0)
 compare_cl.string('title', 'title', label='title_cos', method='cosine', missing_value=0)
