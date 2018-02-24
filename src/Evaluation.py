@@ -42,6 +42,10 @@ def evaluate_match_index(match_index, perfect_match_index, pair_index = None):
     # pairs classified as non-matches that are true non-matches
     true_negatives = non_match_index.size - false_negatives
 
+    precision = round(true_positives / (true_positives + false_positives), 5)
+    recall = round(true_positives / (true_positives + false_negatives), 5)
+    f_measure = round(2 * ((precision * recall) / (precision + recall)), 5)
+
     result = {
         "perfect_match_count": perfect_match_index.size,
         "match_count": match_index.size,
@@ -50,6 +54,9 @@ def evaluate_match_index(match_index, perfect_match_index, pair_index = None):
         "false_positives": false_positives,
         "true_negatives": true_negatives,
         "false_negatives": false_negatives,
+        "precision": precision,
+        "recall": recall,
+        "f_measure": f_measure,
     }
 
     return result
@@ -63,12 +70,8 @@ def print_evaluate_result(result, title=""):
         print(title)
         print("--------------------------")
 
-    print("Perfect Matches Total {0}".format(result["perfect_match_count"]))
-    print("Matches Total {0}".format(result["match_count"]))
-    print("True Positives {0}".format(result["true_positives"]))
-    print("False Positives {0}".format(result["false_positives"]))
-    print("True Negatives {0}".format(result["true_negatives"]))
-    print("False Negatives {0}".format(result["false_negatives"]))
+    for key, value in result.items():
+        print("{0}: {1}".format(key, value))
     print("")
 
 
