@@ -46,13 +46,13 @@ def predict_and_save(classifier, filename_key):
     Uses the trained classifier to classify the features and save them as file
     using the result_file_template by adding the filename_key
     """
-    result = classifier.predict(features)
-    pd.DataFrame(features, result).to_csv(filename_result_template.format(filename_key))
+    result_index = classifier.predict(features)
+    pd.DataFrame(features, result_index).to_csv(filename_result_template.format(filename_key))
 
     # call the evaluation on the created matches
     print("Evaluating {0}".format(type(classifier).__name__))
 
-    print_evaluate_result(evaluate_match_index(result, idxPM))
+    print_evaluate_result(evaluate_match_index(result_index, perfect_match_index, pairs_index))
 
 
 def create_golden_pairs(max_count):
@@ -66,7 +66,7 @@ def create_golden_pairs(max_count):
 
     while True:
         key = rnd.choice(features.index)
-        is_match = key in idxPM
+        is_match = key in perfect_match_index
         if is_match and len(set_match) < max_count:
             set_match.add(key)
         elif not is_match and len(set_distinct) < max_count:
@@ -91,18 +91,19 @@ filename_result_template = config.base_dir + 'prlt\\result_{}.csv'
 print("Load Files")
 dfFile1 = load_file_as_df(config.filename_1, ["title", "description"])
 dfFile2 = load_file_as_df(config.filename_2, ["title", "description"])
-idxPM = load_perfect_match_as_index(config.filename_perfect_match)
+perfect_match_index = load_perfect_match_as_index(config.filename_perfect_match)
 
 print("Indexing")
 indexer = rl.SortedNeighbourhoodIndex(on='title', window=9)
-pairs = indexer.index(dfFile1, dfFile2)
+#indexer = rl.FullIndex()
+pairs_index = indexer.index(dfFile1, dfFile2)
 
 print("Comparing")
 compare_cl = rl.Compare()
 compare_cl.string('title', 'title', label='title', method='damerau_levenshtein', missing_value=0)
 compare_cl.string('title', 'title', label='title_cos', method='cosine', missing_value=0)
 compare_cl.string('description', 'description', label='description', method='cosine', missing_value=0)
-features = compare_cl.compute(pairs, dfFile1, dfFile2)
+features = compare_cl.compute(pairs_index, dfFile1, dfFile2)
 
 
 print("Creating training data")
