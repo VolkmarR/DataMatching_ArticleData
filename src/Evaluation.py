@@ -1,7 +1,6 @@
-import csv
 import pandas as pd
 import os
-
+import datetime
 
 def evaluate_match_file(match_filename, perfect_match_index):
     """
@@ -18,12 +17,13 @@ def evaluate_match_file(match_filename, perfect_match_index):
     return evaluate_match_index(match.index, perfect_match_index)
 
 
-def evaluate_match_index(match_index, perfect_match_index, pair_index = None):
+def evaluate_match_index(match_index, perfect_match_index, pair_index=None, additional_data=None):
     """
     evaluates the found matches using the perfect_match_index
     :param match_index: multiindex containing the perfect match id's
     :param perfect_match_index: multiindex containing the perfect match id's
-    .:param pair_index: index of all the pairs
+    :param pair_index: index of all the pairs
+    :param additional_data additional data, that will be added to the result
     :return: a dictionary containing "perfect_match_total", "match_correct", "match_incorrect"
     """
 
@@ -47,6 +47,8 @@ def evaluate_match_index(match_index, perfect_match_index, pair_index = None):
     f_measure = round(2 * ((precision * recall) / (precision + recall)), 5)
 
     result = {
+        "execute_date": datetime.date.today().strftime("%Y-%m-%d"),
+        "execute_time": datetime.datetime.now().time().strftime("%H:%M:%S"),
         "perfect_match_count": perfect_match_index.size,
         "match_count": match_index.size,
         "pair_count": pair_index.size,
@@ -58,6 +60,11 @@ def evaluate_match_index(match_index, perfect_match_index, pair_index = None):
         "recall": recall,
         "f_measure": f_measure,
     }
+
+    # add the additional_data to the result
+    if not (additional_data is None):
+        for key, value in additional_data.items():
+            result[key] = value
 
     return result
 
@@ -73,6 +80,4 @@ def print_evaluate_result(result, title=""):
     for key, value in result.items():
         print("{0}: {1}".format(key, value))
     print("")
-
-
 
