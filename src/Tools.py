@@ -2,6 +2,8 @@ import pandas as pd
 from unidecode import unidecode
 import re
 import os
+import json
+
 
 class Config:
     def __init__(self, base_dir):
@@ -9,6 +11,7 @@ class Config:
         self.filename_1 = base_dir + 'file1.csv'
         self.filename_2 = base_dir + 'file2.csv'
         self.filename_perfect_match = base_dir + 'PerfectMapping.csv'
+
 
 def pre_process_string(value):
     """
@@ -57,7 +60,7 @@ def load_file_as_df(filename, preprocessing_fieldnames):
     # call the preprocessing method on the 2 columns title and description
 
     if preprocessing_fieldnames:
-       for fieldname in preprocessing_fieldnames:
+        for fieldname in preprocessing_fieldnames:
             data[fieldname] = data[fieldname].apply(lambda x: pre_process_string(x))
 
     return data
@@ -68,3 +71,21 @@ def ensure_directories(filename):
     creates the directories used in the filename, if they don't exist
     """
     os.makedirs(os.path.dirname(filename), exist_ok=True)
+
+
+def load_json_config(filename, default_values):
+    """
+    loads configuration data from json
+    """
+    result_json = {}
+    if os.path.isfile(filename):
+        with open(filename, 'r') as config_file:
+            result_json = json.load(config_file)
+
+    # add missing values
+    for key, value in default_values.items():
+        if key not in result_json:
+            result_json[key] = default_values[key]
+
+    return result_json
+
