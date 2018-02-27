@@ -3,7 +3,7 @@ import pandas as pd
 import random as rnd
 from datetime import datetime
 from Evaluation import evaluate_match_index, print_evaluate_result
-from Tools import load_perfect_match_as_index, load_file_as_df, Config
+from Tools import load_perfect_match_as_index, load_file_as_df, load_json_config, Config
 
 
 def train_supervised_classifier(classifier):
@@ -50,9 +50,8 @@ def predict_and_save(classifier, filename_key):
     pd.DataFrame(features, result_index).to_csv(filename_result_template.format(filename_key))
 
     # call the evaluation on the created matches
-    print("Evaluating {0}".format(type(classifier).__name__))
-
-    print_evaluate_result(evaluate_match_index(result_index, perfect_match_index, pairs_index))
+    print_evaluate_result(evaluate_match_index(result_index, perfect_match_index, pairs_index,
+                                               dict({"classifier": type(classifier).__name__ }, **additional_config)))
 
 
 def create_golden_pairs(max_count):
@@ -88,14 +87,16 @@ start_time = datetime.now()
 config = Config('..\\Data\\AbtBuy\\')
 filename_result_template = config.base_dir + 'prlt\\result_{}.csv'
 
+additional_config = load_json_config(config.base_dir + "config.json", {"windows": 9, "golden_pairs_count": 25})
+
 print("Load Files")
 dfFile1 = load_file_as_df(config.filename_1, ["title", "description"])
 dfFile2 = load_file_as_df(config.filename_2, ["title", "description"])
 perfect_match_index = load_perfect_match_as_index(config.filename_perfect_match)
 
 print("Indexing")
-indexer = rl.SortedNeighbourhoodIndex(on='title', window=9)
-#indexer = rl.FullIndex()
+indexer = rl.SortedNeighbourhoodIndex(on='title', window=additional_config["windows"])
+# indexer = rl.FullIndex()
 pairs_index = indexer.index(dfFile1, dfFile2)
 
 print("Comparing {0} Pairs".format(pairs_index.size))
@@ -105,12 +106,11 @@ compare_cl.string('title', 'title', label='title_cos', method='cosine', missing_
 compare_cl.string('description', 'description', label='description', method='cosine', missing_value=0)
 features = compare_cl.compute(pairs_index, dfFile1, dfFile2)
 
-
 print("Creating training data")
 # golden_pairs = features[0:15000]
 # golden_matches_index = golden_pairs.index & idxPM
 
-golden_pairs, golden_matches_index = create_golden_pairs(25)
+golden_pairs, golden_matches_index = create_golden_pairs(additional_config["golden_pairs_count"])
 # classification
 
 print("Classification")
