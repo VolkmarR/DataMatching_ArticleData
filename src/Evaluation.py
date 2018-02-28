@@ -2,7 +2,7 @@ import pandas as pd
 import os
 import datetime
 
-def evaluate_match_file(match_filename, perfect_match_index):
+def evaluate_match_file(match_filename, perfect_match_index, pair_index=None, additional_data=None):
     """
     evaluates the found matches using the perfect_match_index
     :param match_filename: match dataframe.
@@ -14,7 +14,7 @@ def evaluate_match_file(match_filename, perfect_match_index):
 
     match = pd.read_csv(match_filename, index_col=[0, 1])
 
-    return evaluate_match_index(match.index, perfect_match_index)
+    return evaluate_match_index(match.index, perfect_match_index, pair_index, additional_data)
 
 
 def evaluate_match_index(match_index, perfect_match_index, pair_index=None, additional_data=None):
