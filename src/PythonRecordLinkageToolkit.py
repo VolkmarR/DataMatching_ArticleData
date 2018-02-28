@@ -2,8 +2,8 @@ import recordlinkage as rl
 import pandas as pd
 import random as rnd
 from datetime import datetime
-from Evaluation import evaluate_match_index, print_evaluate_result
-from Tools import load_perfect_match_as_index, load_file_as_df, load_json_config, Config
+import Evaluation as ev
+import Tools as tools
 
 
 def train_supervised_classifier(classifier):
@@ -50,8 +50,11 @@ def predict_and_save(classifier, filename_key):
     pd.DataFrame(features, result_index).to_csv(filename_result_template.format(filename_key))
 
     # call the evaluation on the created matches
-    print_evaluate_result(evaluate_match_index(result_index, perfect_match_index, pairs_index,
-                                               dict({"classifier": type(classifier).__name__ }, **additional_config)))
+    add_data = dict({"classifier": type(classifier).__name__}, **additional_config)
+    result_eval = ev.evaluate_match_index(result_index, perfect_match_index, pairs_index, add_data)
+    ev.print_evaluate_result(result_eval)
+
+    ev.save_results(config.base_dir + "log.csv", result_eval)
 
 
 def create_golden_pairs(max_count):
@@ -84,15 +87,15 @@ def create_golden_pairs(max_count):
 start_time = datetime.now()
 
 # init the configuration
-config = Config('..\\Data\\AbtBuy\\')
+config = tools.Config('..\\Data\\AbtBuy\\')
 filename_result_template = config.base_dir + 'prlt\\result_{}.csv'
 
-additional_config = load_json_config(config.base_dir + "config.json", {"windows": 9, "golden_pairs_count": 25})
+additional_config = tools.load_json_config(config.base_dir + "config.json", {"windows": 9, "golden_pairs_count": 25})
 
 print("Load Files")
-dfFile1 = load_file_as_df(config.filename_1, ["title", "description"])
-dfFile2 = load_file_as_df(config.filename_2, ["title", "description"])
-perfect_match_index = load_perfect_match_as_index(config.filename_perfect_match)
+dfFile1 = tools.load_file_as_df(config.filename_1, ["title", "description"])
+dfFile2 = tools.load_file_as_df(config.filename_2, ["title", "description"])
+perfect_match_index = tools.load_perfect_match_as_index(config.filename_perfect_match)
 
 print("Indexing")
 indexer = rl.SortedNeighbourhoodIndex(on='title', window=additional_config["windows"])

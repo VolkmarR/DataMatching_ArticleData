@@ -11,8 +11,8 @@ The output will be a CSV with our linked results.
 import csv
 import logging
 import dedupe
-from Tools import pre_process_string, load_perfect_match_as_index, Config
-from Evaluation import evaluate_match_file, print_evaluate_result
+import Tools as tools
+import Evaluation as ev
 
 
 def load_data(filename):
@@ -26,7 +26,7 @@ def load_data(filename):
     with open(filename) as csv_file:
         reader = csv.DictReader(csv_file)
         for i, row in enumerate(reader):
-            clean_row = dict([(k, pre_process_string(v)) for (k, v) in row.items()])
+            clean_row = dict([(k, tools.pre_process_string(v)) for (k, v) in row.items()])
             if clean_row['price']:
                 clean_row['price'] = float(clean_row['price'][1:])
             data_d[filename + str(i)] = dict(clean_row)
@@ -95,8 +95,10 @@ def train_with_perfect_match(deduper, max_count, idx_perfect_match):
 
 # Setup
 
-config = Config('..\\Data\\AbtBuy\\')
+config = tools.Config('..\\Data\\AbtBuy\\')
 filename_result = config.base_dir + 'dedupe\\result.csv'
+
+additional_config = tools.load_json_config(config.base_dir + "config.json", {"golden_pairs_count": 25})
 
 logging.getLogger().setLevel(logging.WARNING)
 
@@ -104,7 +106,7 @@ logging.getLogger().setLevel(logging.WARNING)
 print('importing data ...')
 data_1 = load_data(config.filename_1)
 data_2 = load_data(config.filename_2)
-index_perfect_match = load_perfect_match_as_index(config.filename_perfect_match)
+index_perfect_match = tools.load_perfect_match_as_index(config.filename_perfect_match)
 
 # ## Training
 
@@ -144,7 +146,7 @@ linker.sample(data_1, data_2, 15000)
 print('starting active labeling...')
 
 # dedupe.consoleLabel(linker)
-train_with_perfect_match(linker, 10, index_perfect_match)
+train_with_perfect_match(linker, additional_config["golden_pairs_count"], index_perfect_match)
 
 linker.train()
 
@@ -198,4 +200,9 @@ with open(filename_result, 'w', newline='') as f:
         writer.writerow(record)
 
 # Evaluating
-print_evaluate_result(evaluate_match_file(filename_result, index_perfect_match), "Evaluation")
+add_data = dict({"classifier": "dedupe"}, **additional_config)
+result_eval = ev.evaluate_match_file(filename_result, index_perfect_match,
+                                     additional_data=add_data)
+
+ev.print_evaluate_result(result_eval, "Evaluation")
+ev.save_results(config.base_dir + "log.csv", result_eval)
