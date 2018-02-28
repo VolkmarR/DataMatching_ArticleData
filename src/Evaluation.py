@@ -81,3 +81,22 @@ def print_evaluate_result(result, title=""):
         print("{0}: {1}".format(key, value))
     print("")
 
+
+def save_results(filename, result):
+    # load file, if existing
+    if os.path.isfile(filename):
+        df = pd.read_csv(filename)
+    else:
+        df = pd.DataFrame(columns=list(result.keys()))
+
+    # add missing columns
+    for key in result.keys():
+        if key not in df.columns:
+            df[key] = None
+
+    # add the row
+    df = df.append(result, ignore_index=True)
+
+    # save
+    df.to_csv(filename, index=False)
+
