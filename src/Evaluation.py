@@ -2,7 +2,7 @@ import pandas as pd
 import os
 import datetime
 
-def evaluate_match_file(match_filename, perfect_match_index, pair_index=None, additional_data=None):
+def evaluate_match_file(match_filename, perfect_match_index, pair_tuples_list=None, additional_data=None):
     """
     evaluates the found matches using the perfect_match_index
     :param match_filename: match dataframe.
@@ -13,6 +13,10 @@ def evaluate_match_file(match_filename, perfect_match_index, pair_index=None, ad
         return {}
 
     match = pd.read_csv(match_filename, index_col=[0, 1])
+
+    pair_index = None
+    if pair_tuples_list is not None:
+        pair_index = pd.MultiIndex.from_tuples(pair_tuples_list, names=["id1", "id2"])
 
     return evaluate_match_index(match.index, perfect_match_index, pair_index, additional_data)
 

@@ -14,7 +14,6 @@ import dedupe
 import Tools as tools
 import Evaluation as ev
 
-
 def load_data(filename):
     """
     Read in our data from a CSV file and create a dictionary of records, 
@@ -91,6 +90,18 @@ def train_with_perfect_match(deduper, max_count, idx_perfect_match):
             break
 
 
+def get_pairs_from_linker():
+    result_pair_tuple_list = list()
+    for item in linker._blockData(data_1, data_2):
+        for item1 in item[0]:
+            id1 = int(item1[1]["unique_id"])
+            for item2 in item[1]:
+                id2 = int(item2[1]["unique_id"])
+                result_pair_tuple_list.append((id1, id2))
+
+    return result_pair_tuple_list
+
+
 # ---------------------- main ----------------------
 
 # Setup
@@ -164,15 +175,12 @@ linker.train()
 print('clustering...')
 linked_records = linker.match(data_1, data_2, 0)
 
-print('# duplicate sets', len(linked_records))
-
 # ## Writing Results
 
 # Write our original data back out to a CSV with a new column called 
 # 'Cluster ID' which indicates which records refer to each other.
 
 record_pairs = []
-
 cluster_membership = {}
 cluster_id = None
 for cluster_id, (cluster, score) in enumerate(linked_records):
@@ -201,7 +209,7 @@ with open(filename_result, 'w', newline='') as f:
 
 # Evaluating
 add_data = dict({"classifier": "dedupe"}, **additional_config)
-result_eval = ev.evaluate_match_file(filename_result, index_perfect_match,
+result_eval = ev.evaluate_match_file(filename_result, index_perfect_match, get_pairs_from_linker(),
                                      additional_data=add_data)
 
 ev.print_evaluate_result(result_eval, "Evaluation")
