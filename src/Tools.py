@@ -77,15 +77,19 @@ def load_json_config(filename, default_values):
     """
     loads configuration data from json
     """
-    result_json = {}
+    result_config = {}
     if os.path.isfile(filename):
         with open(filename, 'r') as config_file:
-            result_json = json.load(config_file)
+            json_Data = json.load(config_file)
 
-    # add missing values
+    # copy used values to result (or set default value)
     for key, value in default_values.items():
-        if key not in result_json:
-            result_json[key] = default_values[key]
+        if key in json_Data:
+            result_config[key] = json_Data[key]
+        else:
+            result_config[key] = default_values[key]
 
-    return result_json
+    return result_config
+
+
 
