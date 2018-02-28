@@ -85,7 +85,7 @@ def print_evaluate_result(result, title=""):
 def save_results(filename, result):
     # load file, if existing
     if os.path.isfile(filename):
-        df = pd.read_csv(filename)
+        df = pd.read_csv(filename, sep=";", decimal=",")
     else:
         df = pd.DataFrame(columns=list(result.keys()))
 
@@ -98,5 +98,5 @@ def save_results(filename, result):
     df = df.append(result, ignore_index=True)
 
     # save
-    df.to_csv(filename, index=False)
+    df.to_csv(filename, index=False, sep=";", decimal=",")
 
