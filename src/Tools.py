@@ -3,14 +3,49 @@ from unidecode import unidecode
 import re
 import os
 import json
-
+import sys
 
 class Config:
-    def __init__(self, base_dir):
-        self.base_dir = base_dir
-        self.filename_1 = base_dir + 'file1.csv'
-        self.filename_2 = base_dir + 'file2.csv'
-        self.filename_perfect_match = base_dir + 'PerfectMapping.csv'
+    """
+    Main config class
+    """
+    def __init__(self, json_config, item_class):
+        self.common = Config_Common(json_config["common"])
+        self.items = []
+        for json_item in json_config["items"]:
+            self.items.append(item_class(json_item))
+
+
+class Config_Common:
+    """
+    Class for common config values
+    """
+    def __init__(self, json_common):
+        self.base_dir = json_common["base_dir"]
+        self.filename_1 = self.base_dir + json_common["filename_1"]
+        self.filename_2 = self.base_dir + json_common["filename_2"]
+        self.filename_perfect_match = self.base_dir + json_common["filename_perfect_match"]
+        self.result_base_dir = json_common["result_base_dir"]
+        self.fields = []
+
+        for json_common_field in json_common["fields"]:
+            self.fields.append(Config_Common_Field(json_common_field))
+
+    def get_result_file_name(self, config_item_index, name):
+        """
+        returns an output directory for the config item index
+        """
+        dir = "{0}{1}\\".format(self.result_base_dir, config_item_index + 1)
+        ensure_directories(dir)
+        return dir + name
+
+class Config_Common_Field:
+    """
+    Class for a field config
+    """
+    def __init__(self, json_common_field):
+        self.name = json_common_field["name"]
+        self.type = json_common_field["type"]
 
 
 def pre_process_string(value):
@@ -91,5 +126,22 @@ def load_json_config(filename, default_values):
 
     return result_config
 
+def get_config(config_item_class):
+    """
+    loads the config file passed as command line argument
+    :return: a config instance
+    """
 
+    # checking if the config name is valid
+    assert (len(sys.argv) == 2), "configuration file name missing"
+    config_filename = sys.argv[1]
+    assert (os.path.isfile(config_filename)), "configuration file {0} does not exist".format(config_filename)
 
+    # load config
+    with open(config_filename, 'r') as config_file:
+        json_data = json.load(config_file)
+
+    # move base parameters to class
+    result = Config(json_data, config_item_class)
+
+    return result

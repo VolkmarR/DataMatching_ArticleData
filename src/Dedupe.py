@@ -13,6 +13,20 @@ import logging
 import dedupe
 import Tools as tools
 import Evaluation as ev
+import random as rnd
+
+
+class Config_Item:
+    """
+    Config item class for Dedupe
+    """
+    def __init__(self, json_item):
+        self.golden_pairs_count = json_item["golden_pairs_count"]
+
+    def to_dict(self):
+        return dict({"golden_pairs_count": self.golden_pairs_count})
+
+
 
 def load_data(filename):
     """
@@ -106,111 +120,101 @@ def get_pairs_from_linker():
 
 # Setup
 
-config = tools.Config('..\\Data\\AbtBuy\\')
-filename_result = config.base_dir + 'dedupe\\result.csv'
-
-additional_config = tools.load_json_config(config.base_dir + "config.json", {"golden_pairs_count": 25})
+config = tools.get_config(Config_Item)
 
 logging.getLogger().setLevel(logging.WARNING)
 
 # Loading Data
 print('importing data ...')
-data_1 = load_data(config.filename_1)
-data_2 = load_data(config.filename_2)
-index_perfect_match = tools.load_perfect_match_as_index(config.filename_perfect_match)
-
-# ## Training
-
+data_1 = load_data(config.common.filename_1)
+data_2 = load_data(config.common.filename_2)
+index_perfect_match = tools.load_perfect_match_as_index(config.common.filename_perfect_match)
 
 # Define the fields the linker will pay attention to
-#
-# Notice how we are telling the linker to use a custom field comparator
-# for the 'price' field.
+fields = []
+# create the field-list based on the configuration
+for index, cfg in enumerate(config.common.fields):
+    field = {'field': cfg.name, 'type': cfg.type}
+    if cfg.type.lower() == "text":
+        # build the Corpus for the cosine similarity metric using the descriptions
+        # These values are used to create a list of rare words
+        field["corpus"] = build_corpus(cfg.name)
+    fields.append(field)
 
-# build the Corpus for the cosine similarity metric using the descriptions
-# These values are  used to create a list of rare words
-corpus = build_corpus("description")
+# ## Test Loop
+for index, config_item in enumerate(config.items):
 
-"""
-fields = [
-    {'field': 'title', 'type': 'String'},
-    {'field': 'title', 'type': 'Text', 'corpus': descriptions()},
-    {'field': 'description', 'type': 'Text',
-     'has missing': True, 'corpus': descriptions()},
-    {'field': 'price', 'type': 'Price', 'has missing': True}]
-"""
-fields = [
-    {'field': 'title', 'type': 'String'},
-    {'field': 'title', 'type': 'Text', 'corpus': corpus},
-    {'field': 'description', 'type': 'Text', 'has missing': True, 'corpus': corpus}]
+    # init Random with a fixes seed (for reproducibility)
+    rnd.seed(34758139)
 
+    # ## Training
 
-# Create a new linker object and pass our data model to it.
-linker = dedupe.RecordLink(fields)
-# To train the linker, we feed it a sample of records.
-linker.sample(data_1, data_2, 15000)
+    # Create a new linker object and pass our data model to it.
+    linker = dedupe.RecordLink(fields)
+    # To train the linker, we feed it a sample of records.
+    linker.sample(data_1, data_2, 15000)
 
 
-# ## Active learning
-# Dedupe will find the next pair of records
-# it is least certain about and ask you to label them as matches or not.
-print('starting active labeling...')
+    # ## Active learning
+    # Dedupe will find the next pair of records
+    # it is least certain about and ask you to label them as matches or not.
+    print('starting active labeling...')
 
-# dedupe.consoleLabel(linker)
-train_with_perfect_match(linker, additional_config["golden_pairs_count"], index_perfect_match)
+    # dedupe.consoleLabel(linker)
+    train_with_perfect_match(linker, config_item.golden_pairs_count, index_perfect_match)
 
-linker.train()
+    linker.train()
 
-# ## Blocking
+    # ## Blocking
 
-# ## Clustering
+    # ## Clustering
 
-# Find the threshold that will maximize a weighted average of our
-# precision and recall.  When we set the recall weight to 2, we are
-# saying we care twice as much about recall as we do precision.
-#
-# If we had more data, we would not pass in all the blocked data into
-# this function but a representative sample.
+    # Find the threshold that will maximize a weighted average of our
+    # precision and recall.  When we set the recall weight to 2, we are
+    # saying we care twice as much about recall as we do precision.
+    #
+    # If we had more data, we would not pass in all the blocked data into
+    # this function but a representative sample.
 
-print('clustering...')
-linked_records = linker.match(data_1, data_2, 0)
+    print('clustering...')
+    linked_records = linker.match(data_1, data_2, 0)
 
-# ## Writing Results
+    # ## Writing Results
 
-# Write our original data back out to a CSV with a new column called 
-# 'Cluster ID' which indicates which records refer to each other.
+    # Write our original data back out to a CSV with a new column called
+    # 'Cluster ID' which indicates which records refer to each other.
 
-record_pairs = []
-cluster_membership = {}
-cluster_id = None
-for cluster_id, (cluster, score) in enumerate(linked_records):
-    match_data_1 = []
-    match_data_2 = []
-    for record_id in cluster:
-        cluster_membership[record_id] = (cluster_id, score)
-        # search the original ID in the Dataset
-        if record_id in data_1:
-            match_data_1.append(data_1[record_id]["unique_id"])
-        elif record_id in data_2:
-            match_data_2.append(data_2[record_id]["unique_id"])
+    record_pairs = []
+    cluster_membership = {}
+    cluster_id = None
+    for cluster_id, (cluster, score) in enumerate(linked_records):
+        match_data_1 = []
+        match_data_2 = []
+        for record_id in cluster:
+            cluster_membership[record_id] = (cluster_id, score)
+            # search the original ID in the Dataset
+            if record_id in data_1:
+                match_data_1.append(data_1[record_id]["unique_id"])
+            elif record_id in data_2:
+                match_data_2.append(data_2[record_id]["unique_id"])
 
-    if len(match_data_1) > 0 and len(match_data_2) > 0:
-        for match_1 in match_data_1:
-            for match_2 in match_data_2:
-                record_pairs.append([match_1, match_2, "{:.6f}".format(score)])
+        if len(match_data_1) > 0 and len(match_data_2) > 0:
+            for match_1 in match_data_1:
+                for match_2 in match_data_2:
+                    record_pairs.append([match_1, match_2, "{:.6f}".format(score)])
 
+    # Create Mapping File that can be compared to PerfectMapping
+    filename_result = config.common.get_result_file_name(index, 'result.csv')
+    with open(filename_result, 'w', newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow(["idFile1", "idFile2", "Score"])
+        for record in record_pairs:
+            writer.writerow(record)
 
-# Create Mapping File that can be compared to PerfectMapping
-with open(filename_result, 'w', newline='') as f:
-    writer = csv.writer(f)
-    writer.writerow(["idFile1", "idFile2", "Score"])
-    for record in record_pairs:
-        writer.writerow(record)
+    # Evaluating
+    add_data = dict({"classifier": "dedupe"}, **config_item.to_dict())
+    result_eval = ev.evaluate_match_file(filename_result, index_perfect_match, get_pairs_from_linker(),
+                                         additional_data=add_data)
 
-# Evaluating
-add_data = dict({"classifier": "dedupe"}, **additional_config)
-result_eval = ev.evaluate_match_file(filename_result, index_perfect_match, get_pairs_from_linker(),
-                                     additional_data=add_data)
-
-ev.print_evaluate_result(result_eval, "Evaluation")
-ev.save_results(config.base_dir + "log.csv", result_eval)
+    ev.print_evaluate_result(result_eval, "Evaluation")
+    ev.save_results(config.common.result_base_dir + "log.csv", result_eval)

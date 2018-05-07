@@ -6,6 +6,19 @@ import Evaluation as ev
 import Tools as tools
 
 
+class Config_Item:
+    """
+    Config item class for PRLT
+    """
+    def __init__(self, json_item):
+        self.golden_pairs_count = json_item["golden_pairs_count"]
+        self.sorted_neighborhood_window = json_item["sorted_neighborhood_window"]
+
+    def to_dict(self):
+        return {"golden_pairs_count": self.golden_pairs_count,
+                "sorted_neighborhood_window": self.sorted_neighborhood_window}
+
+
 def train_supervised_classifier(classifier):
     classifier.learn(golden_pairs, golden_matches_index)
     return classifier
@@ -41,20 +54,24 @@ def create_and_train_kmeans():
     return classifier
 
 
-def predict_and_save(classifier, filename_key):
+def predict_and_save(classifier, filename_key, current_config_item, config_index):
     """
     Uses the trained classifier to classify the features and save them as file
     using the result_file_template by adding the filename_key
     """
+    # predict the matches
     result_index = classifier.predict(features)
-    pd.DataFrame(features, result_index).to_csv(filename_result_template.format(filename_key))
+
+    # save the file
+    result_filename = config.common.get_result_file_name(config_index, "result_{}.csv".format(filename_key))
+    pd.DataFrame(features, result_index).to_csv(result_filename)
 
     # call the evaluation on the created matches
-    add_data = dict({"classifier": type(classifier).__name__}, **additional_config)
+    add_data = dict({"classifier": type(classifier).__name__}, **current_config_item.to_dict())
     result_eval = ev.evaluate_match_index(result_index, perfect_match_index, pairs_index, add_data)
     ev.print_evaluate_result(result_eval)
 
-    ev.save_results(config.base_dir + "log.csv", result_eval)
+    ev.save_results(config.common.result_base_dir + "log.csv", result_eval)
 
 
 def create_golden_pairs(max_count):
@@ -63,6 +80,8 @@ def create_golden_pairs(max_count):
     max_count distincts
     :return: golden_pair_df, golden_pair_matches_index
     """
+    assert (max_count < perfect_match_index.size), "golden_pairs_count is greater then the count of golden pairs"
+
     set_match = set()
     set_distinct = set()
 
@@ -87,44 +106,39 @@ def create_golden_pairs(max_count):
 start_time = datetime.now()
 
 # init the configuration
-config = tools.Config('..\\Data\\AbtBuy\\')
-filename_result_template = config.base_dir + 'prlt\\result_{}.csv'
-
-additional_config = tools.load_json_config(config.base_dir + "config.json", {"windows": 9, "golden_pairs_count": 25})
+config = tools.get_config(Config_Item)
 
 print("Load Files")
-dfFile1 = tools.load_file_as_df(config.filename_1, ["title", "description"])
-dfFile2 = tools.load_file_as_df(config.filename_2, ["title", "description"])
-perfect_match_index = tools.load_perfect_match_as_index(config.filename_perfect_match)
+dfFile1 = tools.load_file_as_df(config.common.filename_1, ["title", "description"])
+dfFile2 = tools.load_file_as_df(config.common.filename_2, ["title", "description"])
+perfect_match_index = tools.load_perfect_match_as_index(config.common.filename_perfect_match)
 
-print("Indexing")
-indexer = rl.SortedNeighbourhoodIndex(on='title', window=additional_config["windows"])
-# indexer = rl.FullIndex()
-pairs_index = indexer.index(dfFile1, dfFile2)
+# for each config item
+for index, config_item in enumerate(config.items):
+    # init Random with a fixes seed (for reproducibility)
+    rnd.seed(34758139)
 
-print("Comparing {0} Pairs".format(pairs_index.size))
-compare_cl = rl.Compare()
-compare_cl.string('title', 'title', label='title', method='damerau_levenshtein', missing_value=0)
-compare_cl.string('title', 'title', label='title_cos', method='cosine', missing_value=0)
-compare_cl.string('description', 'description', label='description', method='cosine', missing_value=0)
-features = compare_cl.compute(pairs_index, dfFile1, dfFile2)
+    print("Indexing")
+    indexer = rl.SortedNeighbourhoodIndex(on='title', window=config_item.sorted_neighborhood_window)
+    # indexer = rl.FullIndex()
+    pairs_index = indexer.index(dfFile1, dfFile2)
 
-print("Creating training data")
-# golden_pairs = features[0:15000]
-# golden_matches_index = golden_pairs.index & idxPM
+    print("Comparing {0} Pairs".format(pairs_index.size))
+    compare_cl = rl.Compare()
+    for cfg in config.common.fields:
+        compare_cl.string(s1=cfg.name, s2=cfg.name, method=cfg.type)
+    features = compare_cl.compute(pairs_index, dfFile1, dfFile2)
 
-golden_pairs, golden_matches_index = create_golden_pairs(additional_config["golden_pairs_count"])
-# classification
+    print("Creating training data")
+    golden_pairs, golden_matches_index = create_golden_pairs(config_item.golden_pairs_count)
+    # classification
 
-print("Classification")
-print("")
+    print("Classification")
+    print("")
 
-predict_and_save(create_and_train_svm(), "svm")
-
-predict_and_save(create_and_train_naive_bayes(), "nb")
-
-predict_and_save(create_and_train_logistic_regression(), "lr")
-
-predict_and_save(create_and_train_kmeans(), "km")
+    predict_and_save(create_and_train_svm(), "svm", config_item, index)
+    predict_and_save(create_and_train_naive_bayes(), "nb", config_item, index)
+    predict_and_save(create_and_train_logistic_regression(), "lr", config_item, index)
+    predict_and_save(create_and_train_kmeans(), "km", config_item, index)
 
 print('Time elapsed (hh:mm:ss.ms) {}'.format(datetime.now() - start_time))
