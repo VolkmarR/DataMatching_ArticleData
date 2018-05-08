@@ -77,14 +77,15 @@ def pre_process_string(value):
 def load_perfect_match_as_index(filename):
     """
     Creates a MultiIndex based on the perfect mapping file
-    Expects the record id of the first file in the first column and the record id of the secord file in the second column
+    Expects the record id of the first file in the first column
+    and the record id of the second file in the second column
     """
     # loading perfectMapping File
     pm = pd.read_csv(filename, encoding="iso-8859-1", engine='c', skipinitialspace=True)
     # create a list of tuples
     idx_tuples = []
     for index, row in pm.iterrows():
-        idx_tuples.append((row[0], row[1]))
+        idx_tuples.append((str(row[0]), str(row[1])))
     # return as multiIndex
     return pd.MultiIndex.from_tuples(idx_tuples, names=["id1", "id2"])
 
@@ -97,6 +98,7 @@ def load_file_as_df(filename, preprocessing_fieldnames):
     data = pd.read_csv(filename, encoding="iso-8859-1", engine='c', skipinitialspace=True, index_col=[0])
     # call the preprocessing method on the 2 columns title and description
 
+    data.index = data.index.map(str)
     if preprocessing_fieldnames:
         for fieldname in preprocessing_fieldnames:
             data[fieldname] = data[fieldname].apply(lambda x: pre_process_string(x))

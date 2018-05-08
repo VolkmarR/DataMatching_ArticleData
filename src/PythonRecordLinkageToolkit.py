@@ -69,7 +69,9 @@ def predict_and_save(classifier, filename_key, current_config_item, config_index
     pd.DataFrame(features, result_index).to_csv(result_filename)
 
     # call the evaluation on the created matches
-    add_data = dict({"classifier": type(classifier).__name__}, **current_config_item.to_dict())
+    add_data = current_config_item.to_dict()
+    add_data["classifier"] = type(classifier).__name__
+    add_data["config_item_index"] = config_index
     result_eval = ev.evaluate_match_index(result_index, perfect_match_index, pairs_index, add_data)
     ev.print_evaluate_result(result_eval)
 

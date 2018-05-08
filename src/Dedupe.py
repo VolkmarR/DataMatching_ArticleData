@@ -28,20 +28,23 @@ class Config_Item:
 
 
 
-def load_data(filename):
+def load_data(filename, preprocessing_fieldnames):
     """
     Read in our data from a CSV file and create a dictionary of records, 
     where the key is a unique record ID.
     """
 
     data_d = {}
-
+    if preprocessing_fieldnames:
+        preprocessing_fieldnames_set = set(preprocessing_fieldnames)
+    else:
+        preprocessing_fieldnames_set = set()
     with open(filename) as csv_file:
         reader = csv.DictReader(csv_file)
         for i, row in enumerate(reader):
-            clean_row = dict([(k, tools.pre_process_string(v)) for (k, v) in row.items()])
-            if clean_row['price']:
-                clean_row['price'] = float(clean_row['price'][1:])
+            clean_row = dict([(k, v) for (k, v) in row.items()])
+            for fieldname in preprocessing_fieldnames_set:
+                clean_row[fieldname] = tools.pre_process_string(clean_row[fieldname])
             data_d[filename + str(i)] = dict(clean_row)
 
     return data_d
@@ -83,7 +86,7 @@ def train_with_perfect_match(deduper, max_count, idx_perfect_match):
         # build key
         ids = []
         for pair in record_pair:
-            ids.append(int(pair["id"]))
+            ids.append(str(pair["id"]))
         key = (ids[0], ids[1])
 
         # check if key is match
@@ -108,9 +111,9 @@ def get_pairs_from_linker():
     result_pair_tuple_list = list()
     for item in linker._blockData(data_1, data_2):
         for item1 in item[0]:
-            id1 = int(item1[1]["id"])
+            id1 = str(item1[1]["id"])
             for item2 in item[1]:
-                id2 = int(item2[1]["id"])
+                id2 = str(item2[1]["id"])
                 result_pair_tuple_list.append((id1, id2))
 
     return result_pair_tuple_list
@@ -126,8 +129,12 @@ logging.getLogger().setLevel(logging.WARNING)
 
 # Loading Data
 print('importing data ...')
-data_1 = load_data(config.common.filename_1)
-data_2 = load_data(config.common.filename_2)
+fieldnames = []
+for cfg in config.common.fields:
+    fieldnames.append(cfg.name)
+
+data_1 = load_data(config.common.filename_1, fieldnames)
+data_2 = load_data(config.common.filename_2, fieldnames)
 index_perfect_match = tools.load_perfect_match_as_index(config.common.filename_perfect_match)
 
 # Define the fields the linker will pay attention to
@@ -142,7 +149,7 @@ for index, cfg in enumerate(config.common.fields):
     fields.append(field)
 
 # ## Test Loop
-for index, config_item in enumerate(config.items):
+for config_index, config_item in enumerate(config.items):
 
     # init Random with a fixes seed (for reproducibility)
     tools.init_random_with_seed()
@@ -204,7 +211,7 @@ for index, config_item in enumerate(config.items):
                     record_pairs.append([match_1, match_2, "{:.6f}".format(score)])
 
     # Create Mapping File that can be compared to PerfectMapping
-    filename_result = config.common.get_result_file_name(index, 'result.csv')
+    filename_result = config.common.get_result_file_name(config_index, 'result.csv')
     with open(filename_result, 'w', newline='') as f:
         writer = csv.writer(f)
         writer.writerow(["idFile1", "idFile2", "Score"])
@@ -213,6 +220,9 @@ for index, config_item in enumerate(config.items):
 
     # Evaluating
     add_data = dict({"classifier": "dedupe"}, **config_item.to_dict())
+    add_data["classifier"] = "dedupe"
+    add_data["config_item_index"] = config_index
+
     result_eval = ev.evaluate_match_file(filename_result, index_perfect_match, get_pairs_from_linker(),
                                          additional_data=add_data)
 

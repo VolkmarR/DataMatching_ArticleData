@@ -12,13 +12,18 @@ def evaluate_match_file(match_filename, perfect_match_index, pair_tuples_list=No
     if not os.path.isfile(match_filename):
         return {}
 
-    match = pd.read_csv(match_filename, index_col=[0, 1])
+    # load matches and create a list of tuples
+    match_tuples = []
+    for index, row in pd.read_csv(match_filename).iterrows():
+        match_tuples.append((str(row[0]), str(row[1])))
+    match_index = pd.MultiIndex.from_tuples(match_tuples, names=["id1", "id2"])
 
+    # create pair index
     pair_index = None
     if pair_tuples_list is not None:
         pair_index = pd.MultiIndex.from_tuples(pair_tuples_list, names=["id1", "id2"])
 
-    return evaluate_match_index(match.index, perfect_match_index, pair_index, additional_data)
+    return evaluate_match_index(match_index, perfect_match_index, pair_index, additional_data)
 
 
 def evaluate_match_index(match_index, perfect_match_index, pair_index=None, additional_data=None):
@@ -46,9 +51,19 @@ def evaluate_match_index(match_index, perfect_match_index, pair_index=None, addi
     # pairs classified as non-matches that are true non-matches
     true_negatives = non_match_index.size - false_negatives
 
-    precision = round(true_positives / (true_positives + false_positives), 5)
-    recall = round(true_positives / (true_positives + false_negatives), 5)
-    f_measure = round(2 * ((precision * recall) / (precision + recall)), 5)
+    # calculate precision and recall
+    if true_positives + false_positives != 0:
+        precision = round(true_positives / (true_positives + false_positives), 5)
+        recall = round(true_positives / (true_positives + false_negatives), 5)
+    else:
+        precision = 0.0
+        recall = 0.0
+
+    # calculate f_measure
+    if precision + recall != 0:
+        f_measure = round(2 * ((precision * recall) / (precision + recall)), 5)
+    else:
+        f_measure = 0.0
 
     result = {
         "execute_date": datetime.date.today().strftime("%Y-%m-%d"),
