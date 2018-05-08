@@ -1,0 +1,27 @@
+{
+	"common" : {
+		"base_dir" : "..\\data\\AbtBuySmall\\",
+		"filename_1" : "Abt.csv",
+		"filename_2" : "Buy.csv",
+		"filename_perfect_match" : "abt_buy_perfectMapping.csv",
+		"result_base_dir" : "..\\data\\AbtBuySmall\\prlt\\",
+		"fields" : [{
+				"name" : "name",
+				"type" : "smith_waterman"
+			}, {
+				"name" : "name",
+				"type" : "cosine"
+			}
+		]
+	},
+	"items" : [{
+			"golden_pairs_count" : 5,
+			"sorted_neighborhood_window" : 9,
+			"sorted_neighborhood_field_name": "name"
+		}, {
+			"golden_pairs_count" : 5,
+			"sorted_neighborhood_window" : 9,
+			"sorted_neighborhood_field_name": "name"
+		}
+	]
+}
