@@ -13,10 +13,12 @@ class Config_Item:
     def __init__(self, json_item):
         self.golden_pairs_count = json_item["golden_pairs_count"]
         self.sorted_neighborhood_window = json_item["sorted_neighborhood_window"]
+        self.sorted_neighborhood_field_name = json_item["sorted_neighborhood_field_name"]
 
     def to_dict(self):
         return {"golden_pairs_count": self.golden_pairs_count,
-                "sorted_neighborhood_window": self.sorted_neighborhood_window}
+                "sorted_neighborhood_window": self.sorted_neighborhood_window,
+                "sorted_neighborhood_field_name": self.sorted_neighborhood_field_name}
 
 
 def train_supervised_classifier(classifier):
@@ -109,17 +111,21 @@ start_time = datetime.now()
 config = tools.get_config(Config_Item)
 
 print("Load Files")
-dfFile1 = tools.load_file_as_df(config.common.filename_1, ["title", "description"])
-dfFile2 = tools.load_file_as_df(config.common.filename_2, ["title", "description"])
+fieldnames = []
+for cfg in config.common.fields:
+    fieldnames.append(cfg.name)
+
+dfFile1 = tools.load_file_as_df(config.common.filename_1, fieldnames)
+dfFile2 = tools.load_file_as_df(config.common.filename_2, fieldnames)
 perfect_match_index = tools.load_perfect_match_as_index(config.common.filename_perfect_match)
 
 # for each config item
 for index, config_item in enumerate(config.items):
     # init Random with a fixes seed (for reproducibility)
-    rnd.seed(34758139)
+    tools.init_random_with_seed()
 
     print("Indexing")
-    indexer = rl.SortedNeighbourhoodIndex(on='title', window=config_item.sorted_neighborhood_window)
+    indexer = rl.SortedNeighbourhoodIndex(on=config_item.sorted_neighborhood_field_name, window=config_item.sorted_neighborhood_window)
     # indexer = rl.FullIndex()
     pairs_index = indexer.index(dfFile1, dfFile2)
 
