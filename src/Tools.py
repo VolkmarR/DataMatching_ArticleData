@@ -4,6 +4,7 @@ import re
 import os
 import json
 import sys
+import random as rnd
 
 class Config:
     """
@@ -12,8 +13,9 @@ class Config:
     def __init__(self, json_config, item_class):
         self.common = Config_Common(json_config["common"])
         self.items = []
-        for json_item in json_config["items"]:
-            self.items.append(item_class(json_item))
+        if not (item_class is None):
+            for json_item in json_config["items"]:
+                self.items.append(item_class(json_item))
 
 
 class Config_Common:
@@ -35,9 +37,9 @@ class Config_Common:
         """
         returns an output directory for the config item index
         """
-        dir = "{0}{1}\\".format(self.result_base_dir, config_item_index + 1)
-        ensure_directories(dir)
-        return dir + name
+        filename = "{0}{1}\\{2}".format(self.result_base_dir, config_item_index + 1, name)
+        ensure_directories(filename)
+        return filename
 
 class Config_Common_Field:
     """
@@ -45,7 +47,8 @@ class Config_Common_Field:
     """
     def __init__(self, json_common_field):
         self.name = json_common_field["name"]
-        self.type = json_common_field["type"]
+        if "type" in json_common_field:
+            self.type = json_common_field["type"]
 
 
 def pre_process_string(value):
@@ -145,3 +148,6 @@ def get_config(config_item_class):
     result = Config(json_data, config_item_class)
 
     return result
+
+def init_random_with_seed():
+    rnd.seed(34758139)
