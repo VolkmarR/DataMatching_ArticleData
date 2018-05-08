@@ -145,7 +145,7 @@ for index, cfg in enumerate(config.common.fields):
 for index, config_item in enumerate(config.items):
 
     # init Random with a fixes seed (for reproducibility)
-    rnd.seed(34758139)
+    tools.init_random_with_seed()
 
     # ## Training
 
