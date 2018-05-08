@@ -83,7 +83,7 @@ def train_with_perfect_match(deduper, max_count, idx_perfect_match):
         # build key
         ids = []
         for pair in record_pair:
-            ids.append(int(pair["unique_id"]))
+            ids.append(int(pair["id"]))
         key = (ids[0], ids[1])
 
         # check if key is match
@@ -108,9 +108,9 @@ def get_pairs_from_linker():
     result_pair_tuple_list = list()
     for item in linker._blockData(data_1, data_2):
         for item1 in item[0]:
-            id1 = int(item1[1]["unique_id"])
+            id1 = int(item1[1]["id"])
             for item2 in item[1]:
-                id2 = int(item2[1]["unique_id"])
+                id2 = int(item2[1]["id"])
                 result_pair_tuple_list.append((id1, id2))
 
     return result_pair_tuple_list
@@ -194,9 +194,9 @@ for index, config_item in enumerate(config.items):
             cluster_membership[record_id] = (cluster_id, score)
             # search the original ID in the Dataset
             if record_id in data_1:
-                match_data_1.append(data_1[record_id]["unique_id"])
+                match_data_1.append(data_1[record_id]["id"])
             elif record_id in data_2:
-                match_data_2.append(data_2[record_id]["unique_id"])
+                match_data_2.append(data_2[record_id]["id"])
 
         if len(match_data_1) > 0 and len(match_data_2) > 0:
             for match_1 in match_data_1:
