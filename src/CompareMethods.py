@@ -1,7 +1,7 @@
 import pandas as pd
 import recordlinkage as rl
 import random as rnd
-from Tools import load_file_as_df, load_perfect_match_as_index, ensure_directories, Config
+import Tools as tools
 
 
 def run_compare(fieldname, df1, df2, index):
@@ -29,32 +29,36 @@ def run_compare(fieldname, df1, df2, index):
     return features
 
 
+def save_result(df, filename):
+    # save the full result
+    df.to_csv(config.common.result_base_dir + filename)
+
 def sample_index(index, sample_count):
+    # extracts a sample from the index
     return pd.MultiIndex.from_tuples(rnd.sample(list(index), sample_count))
 
 
 # ------------------------- main ------------------
 
 # setup
-config = Config('..\\Data\\AbtBuy\\')
-ensure_directories(config.base_dir + 'compare\\dummy')
+config = tools.get_config(None)
+assert (len(config.common.fields) == 1), "Only one Field is allowed for fields"
+fieldname = config.common.fields[0].name
+
+tools.ensure_directories(config.common.result_base_dir + "dummy")
 
 # init Random with a fixes seed (for reproducibility)
-rnd.seed(19740327)
+tools.init_random_with_seed()
 
 # load files
-df_1 = load_file_as_df(config.filename_1, ["title"])
-df_2 = load_file_as_df(config.filename_2, ["title"])
-idx_match = load_perfect_match_as_index(config.filename_perfect_match)
+df_1 = tools.load_file_as_df(config.common.filename_1, [fieldname])
+df_2 = tools.load_file_as_df(config.common.filename_2, [fieldname])
+idx_match = tools.load_perfect_match_as_index(config.common.filename_perfect_match)
 
 # build a full index without the matches
 idx_full = rl.FullIndex().index(df_1, df_2)
 idx_distinct = idx_full.difference(idx_match)
 
-
 # run compare
-run_compare('title', df_1, df_2, idx_match).\
-    to_csv(config.base_dir + 'compare\\Compare_methods_matches.csv')
-
-run_compare('title', df_1, df_2, sample_index(idx_distinct, 1000)).\
-    to_csv(config.base_dir + 'compare\\Compare_methods_distinct_1000.csv')
+save_result(run_compare(fieldname, df_1, df_2, idx_match), 'Compare_methods_matches.csv')
+save_result(run_compare(fieldname, df_1, df_2, idx_distinct), 'Compare_methods_distinct.csv')
