@@ -60,5 +60,5 @@ idx_full = rl.FullIndex().index(df_1, df_2)
 idx_distinct = idx_full.difference(idx_match)
 
 # run compare
-save_result(run_compare(fieldname, df_1, df_2, idx_match), 'Compare_methods_matches.csv')
-save_result(run_compare(fieldname, df_1, df_2, idx_distinct), 'Compare_methods_distinct.csv')
+save_result(run_compare(fieldname, df_1, df_2, idx_match), 'cm_matches.csv')
+save_result(run_compare(fieldname, df_1, df_2, idx_distinct), 'cm_distinct.csv')
