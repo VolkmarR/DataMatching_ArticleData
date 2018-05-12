@@ -77,6 +77,20 @@ def predict_and_save(classifier, filename_key, current_config_item, config_index
 
     ev.save_results(config.common.result_base_dir + "log.csv", result_eval)
 
+def create_list_of_random_elements(index, max_count):
+    """
+    extract max_count items from the index and returns them as list
+    """
+    elements = index.tolist()
+    result = list()
+
+    while len(result) < max_count and elements:
+        key = rnd.choice(elements)
+        result.append(key)
+        elements.remove(key)
+
+    return result
+
 
 def create_golden_pairs(max_count):
     """
@@ -86,22 +100,12 @@ def create_golden_pairs(max_count):
     """
     assert (max_count < perfect_match_index.size), "golden_pairs_count is greater then the count of golden pairs"
 
-    set_match = set()
-    set_distinct = set()
+    # create match and distinct list
+    train_match = create_list_of_random_elements(features.index.intersection(perfect_match_index), max_count)
+    train_distinct = create_list_of_random_elements(features.index.difference(perfect_match_index), max_count)
 
-    while True:
-        key = rnd.choice(features.index)
-        is_match = key in perfect_match_index
-        if is_match and len(set_match) < max_count:
-            set_match.add(key)
-        elif not is_match and len(set_distinct) < max_count:
-            set_distinct.add(key)
-
-        if len(set_match) == max_count and len(set_distinct) == max_count:
-            break
-
-    res_pairs = pd.DataFrame(features, pd.MultiIndex.from_tuples(list(set().union(set_match, set_distinct))))
-    res_match = pd.MultiIndex.from_tuples(list(set_match))
+    res_pairs = pd.DataFrame(features, pd.MultiIndex.from_tuples(list(set().union(train_match, train_distinct))))
+    res_match = pd.MultiIndex.from_tuples(list(train_match))
     return res_pairs, res_match
 
 
