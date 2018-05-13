@@ -6,6 +6,8 @@ pandas
 dedupe
 #Unidecode==0.4.16
 future
+affinegap
+simplecosine
 
 # python record linkage toolkit requirements
 recordlinkage
