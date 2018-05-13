@@ -2,6 +2,27 @@ import pandas as pd
 import recordlinkage as rl
 import random as rnd
 import Tools as tools
+import math
+from affinegap import normalizedAffineGapDistance
+from simplecosine.cosine import CosineTextSimilarity
+
+def dedupe_affine_gap(s1, s2):
+    return pd.Series(list(zip(s1, s2))).apply(lambda x: normalizedAffineGapDistance(x[0], x[1]))
+
+def dedupe_cosine(s1, s2):
+    s1_2 = pd.Series(list(zip(s1, s2)));
+
+    # build corpus
+    corpus_set = []
+    for index, value in s1_2.iteritems():
+        corpus_set.append(value[0])
+        corpus_set.append(value[1])
+
+    # init cosine instance
+    cosine = CosineTextSimilarity(corpus_set)
+
+    # calc similarity
+    return s1_2.apply(lambda x: cosine(x[0], x[1]))
 
 
 def run_compare(fieldname, df1, df2, index):
@@ -12,7 +33,11 @@ def run_compare(fieldname, df1, df2, index):
     # build compare-class
     compare_cl = rl.Compare()
     for method in compare_methods:
-        compare_cl.string(fieldname, fieldname, label=method, method=method, missing_value=0)
+       compare_cl.string(fieldname, fieldname, label='prlt_' + method, method=method, missing_value=0)
+
+    # dedupe classes
+    compare_cl.compare_vectorized(dedupe_affine_gap, fieldname, fieldname, label='dedupe_affine_gap')
+    compare_cl.compare_vectorized(dedupe_cosine, fieldname, fieldname, label='dedupe_cosine')
 
     # calculate features
     features = compare_cl.compute(index, df1, df2)
@@ -28,10 +53,16 @@ def run_compare(fieldname, df1, df2, index):
     # return the created dataframe
     return features
 
+def save_binned_result(df_match, df_distinct, bin_count, filename_with_placeholder):
+    for col_name in list(df_match)[2:]:
+        df = tools.series_to_bins(df_match[col_name], df_distinct[col_name], bin_count, )
+        tools.save_csv(df, config.common.result_base_dir + filename_with_placeholder.format(col_name), index=False)
+
 
 def save_result(df, filename):
     # save the full result
     df.to_csv(config.common.result_base_dir + filename)
+
 
 def sample_index(index, sample_count):
     # extracts a sample from the index
@@ -57,8 +88,13 @@ idx_match = tools.load_perfect_match_as_index(config.common.filename_perfect_mat
 
 # build a full index without the matches
 idx_full = rl.FullIndex().index(df_1, df_2)
-idx_distinct = idx_full.difference(idx_match)
+idx_distinct = sample_index(idx_full.difference(idx_match), len(idx_match) * 2)
 
 # run compare
-save_result(run_compare(fieldname, df_1, df_2, idx_match), 'cm_matches.csv')
-save_result(run_compare(fieldname, df_1, df_2, idx_distinct), 'cm_distinct.csv')
+df_match = run_compare(fieldname, df_1, df_2, idx_match)
+df_distinct = run_compare(fieldname, df_1, df_2, idx_distinct)
+
+# save result
+save_result(df_match, 'cm_matches.csv')
+save_result(df_distinct, 'cm_distinct.csv')
+save_binned_result(df_match, df_distinct, 25, 'cm_bin_{0}.csv')
