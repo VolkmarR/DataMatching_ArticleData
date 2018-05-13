@@ -5,6 +5,7 @@ import os
 import json
 import sys
 import random as rnd
+import math
 
 class Config:
     """
@@ -152,4 +153,74 @@ def get_config(config_item_class):
     return result
 
 def init_random_with_seed():
+    """
+    initializes the random generator with a fixed seed
+    """
     rnd.seed(34758139)
+
+
+def init_bin_top(max_value, bin_count):
+    """
+    creates a list for binning
+    """
+    max_value = math.ceil(max_value)
+    bin_size = round(max_value / bin_count, 3)
+    bins = []
+    i = bin_size
+    while i <= max_value:
+        bins.append(i)
+        i = round(i + bin_size, 3)
+
+    return bins
+
+
+def bin_values(bin_top, series):
+    """
+    puts the count of values into the bins
+    """
+    # init result
+    bin_count = len(bin_top)
+    result = [0] * bin_count
+
+    # start binning
+    i = 0
+    for value in series.sort_values():
+        # check if the index of the bin is valid
+        while i < bin_count and bin_top[i] < value:
+            i += 1
+
+        # increment the bin_count
+        result[i] += 1
+
+    # normalize values
+    series_count = len(series)
+    for i, val in enumerate(result):
+        result[i] = round(val / series_count, 6)
+
+    return result
+
+
+def series_to_bins(series_match, series_distinct, bin_count):
+    """
+    splits the values of the series to bin_count bins.
+    each bin contains the count of values contained in the bin
+    """
+
+    # create bin_top
+    max_value = pd.Series([series_match.max(), series_distinct.max()]).max()
+    bin_top = init_bin_top(max_value, bin_count)
+
+    # create binned values
+    bin_count_match = bin_values(bin_top, series_match)
+    bin_count_distinct = bin_values(bin_top, series_distinct)
+
+    # return the dataframe
+    return pd.DataFrame({
+        "bin_top": pd.Series(bin_top),
+        "norm_count_match": pd.Series(bin_count_match),
+        "norm_count_distinct": pd.Series(bin_count_distinct)
+    })
+
+
+def save_csv(df, filename, index=True):
+    df.to_csv(filename, index= index, decimal=',', sep=';')
