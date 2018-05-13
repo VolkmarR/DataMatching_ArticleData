@@ -2,7 +2,7 @@ import pandas as pd
 import recordlinkage as rl
 import random as rnd
 import Tools as tools
-import math
+from datetime import datetime
 from affinegap import normalizedAffineGapDistance
 from simplecosine.cosine import CosineTextSimilarity
 
@@ -71,6 +71,8 @@ def sample_index(index, sample_count):
 
 # ------------------------- main ------------------
 
+start_time = datetime.now()
+
 # setup
 config = tools.get_config(None)
 assert (len(config.common.fields) == 1), "Only one Field is allowed for fields"
@@ -82,6 +84,7 @@ tools.ensure_directories(config.common.result_base_dir + "dummy")
 tools.init_random_with_seed()
 
 # load files
+print("Loading files")
 df_1 = tools.load_file_as_df(config.common.filename_1, [fieldname])
 df_2 = tools.load_file_as_df(config.common.filename_2, [fieldname])
 idx_match = tools.load_perfect_match_as_index(config.common.filename_perfect_match)
@@ -91,10 +94,15 @@ idx_full = rl.FullIndex().index(df_1, df_2)
 idx_distinct = sample_index(idx_full.difference(idx_match), len(idx_match) * 2)
 
 # run compare
+print("Compare matches")
 df_match = run_compare(fieldname, df_1, df_2, idx_match)
+
+print("Compare distincts")
 df_distinct = run_compare(fieldname, df_1, df_2, idx_distinct)
 
 # save result
 save_result(df_match, 'cm_matches.csv')
 save_result(df_distinct, 'cm_distinct.csv')
 save_binned_result(df_match, df_distinct, 25, 'cm_bin_{0}.csv')
+
+print('Time elapsed (hh:mm:ss.ms) {}'.format(datetime.now() - start_time))
