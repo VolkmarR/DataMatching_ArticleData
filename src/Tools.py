@@ -186,7 +186,7 @@ def bin_values(bin_top, series):
     i = 0
     for value in series.sort_values():
         # check if the index of the bin is valid
-        while i < bin_count and bin_top[i] < value:
+        while i < bin_count and bin_top[i] < round(value, 6):
             i += 1
 
         # increment the bin_count
@@ -207,7 +207,7 @@ def series_to_bins(series_match, series_distinct, bin_count):
     """
 
     # create bin_top
-    max_value = pd.Series([series_match.max(), series_distinct.max()]).max()
+    max_value = round(pd.Series([series_match.max(), series_distinct.max()]).max(), 6)
     bin_top = init_bin_top(max_value, bin_count)
 
     # create binned values
@@ -217,10 +217,10 @@ def series_to_bins(series_match, series_distinct, bin_count):
     # return the dataframe
     return pd.DataFrame({
         "bin_top": pd.Series(bin_top),
-        "norm_count_match": pd.Series(bin_count_match),
-        "norm_count_distinct": pd.Series(bin_count_distinct)
-    })
+        "Match": pd.Series(bin_count_match),
+        "Non-Match": pd.Series(bin_count_distinct)},
+        columns=['bin_top', 'Match', 'Non-Match'])
 
 
 def save_csv(df, filename, index=True):
-    df.to_csv(filename, index= index, decimal=',', sep=';')
+    df.to_csv(filename, index=index, decimal=',', sep=';')
