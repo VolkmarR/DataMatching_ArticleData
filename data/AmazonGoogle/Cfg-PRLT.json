@@ -1,0 +1,27 @@
+{
+	"common" : {
+		"base_dir" : "..\\data\\AmazonGoogle\\",
+		"filename_1" : "Amazon.csv",
+		"filename_2" : "GoogleProducts.csv",
+		"filename_perfect_match" : "Amzon_GoogleProducts_perfectMapping.csv",
+		"result_base_dir" : "..\\data\\AmazonGoogle\\prlt\\",
+		"fields" : [{
+				"name" : "name",
+				"type" : "smith_waterman"
+			}, {
+				"name" : "name",
+				"type" : "cosine"
+			}
+		]
+	},
+	"items" : [{
+			"golden_pairs_count" : 5,
+			"sorted_neighborhood_window" : 9,
+			"sorted_neighborhood_field_name": "name"
+		}, {
+			"golden_pairs_count" : 5,
+			"sorted_neighborhood_window" : 9,
+			"sorted_neighborhood_field_name": "name"
+		}
+	]
+}
