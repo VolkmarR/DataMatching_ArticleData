@@ -14,8 +14,8 @@ def evaluate_match_file(match_filename, perfect_match_index, pair_tuples_list=No
 
     # load matches and create a list of tuples
     match_tuples = []
-    for index, row in pd.read_csv(match_filename).iterrows():
-        match_tuples.append((str(row[0]), str(row[1])))
+    for index, row in pd.read_csv(match_filename, converters={0: str, 1: str}).iterrows():
+        match_tuples.append((row[0], row[1]))
     match_index = pd.MultiIndex.from_tuples(match_tuples, names=["id1", "id2"])
 
     # create pair index
