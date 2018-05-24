@@ -6,13 +6,14 @@ import json
 import sys
 import random as rnd
 import math
+from pathlib import Path
 
 class Config:
     """
     Main config class
     """
-    def __init__(self, json_config, item_class):
-        self.common = Config_Common(json_config["common"])
+    def __init__(self, json_config, item_class, config_name):
+        self.common = Config_Common(json_config["common"], config_name)
         self.items = []
         if not (item_class is None):
             for json_item in json_config["items"]:
@@ -23,7 +24,8 @@ class Config_Common:
     """
     Class for common config values
     """
-    def __init__(self, json_common):
+    def __init__(self, json_common, config_name):
+        self.config_name = config_name
         self.base_dir = json_common["base_dir"]
         self.filename_1 = self.base_dir + json_common["filename_1"]
         self.filename_2 = self.base_dir + json_common["filename_2"]
@@ -38,9 +40,17 @@ class Config_Common:
         """
         returns an output directory for the config item index
         """
-        filename = "{0}{1}\\{2}".format(self.result_base_dir, config_item_index + 1, name)
+        filename = "{0}{1}\\{2}\\{3}".format(self.result_base_dir, self.config_name, config_item_index + 1, name)
         ensure_directories(filename)
         return filename
+
+
+    def fields_to_string(self):
+        """
+        converts the fields to a string
+        """
+        return ",".join(map(lambda x: x.to_string(), self.fields))
+
 
 class Config_Common_Field:
     """
@@ -50,6 +60,12 @@ class Config_Common_Field:
         self.name = json_common_field["name"]
         if "type" in json_common_field:
             self.type = json_common_field["type"]
+
+    def to_string(self):
+        if self.type:
+            return "{0} ({1})".format(self.name, self.type)
+        else:
+            return self.name
 
 
 def pre_process_string(value):
@@ -148,7 +164,7 @@ def get_config(config_item_class):
         json_data = json.load(config_file)
 
     # move base parameters to class
-    result = Config(json_data, config_item_class)
+    result = Config(json_data, config_item_class, Path(config_filename).stem)
 
     return result
 
