@@ -219,9 +219,12 @@ for config_index, config_item in enumerate(config.items):
             writer.writerow(record)
 
     # Evaluating
+    filename_result = config.common.get_result_file_name(config_index, 'result.csv')
     add_data = dict({"classifier": "dedupe"}, **config_item.to_dict())
     add_data["classifier"] = "dedupe"
+    add_data["config_name"] = config.common.config_name
     add_data["config_item_index"] = config_index
+    add_data["fields"] = config.common.fields_to_string()
 
     result_eval = ev.evaluate_match_file(filename_result, index_perfect_match, get_pairs_from_linker(),
                                          additional_data=add_data)
