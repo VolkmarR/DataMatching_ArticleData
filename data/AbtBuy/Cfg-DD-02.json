@@ -1,0 +1,32 @@
+{
+  "common": {
+    "base_dir": "..\\data\\AbtBuy\\",
+    "filename_1": "Abt.csv",
+    "filename_2": "Buy.csv",
+    "filename_perfect_match": "abt_buy_perfectMapping.csv",
+    "result_base_dir": "..\\data\\AbtBuy\\dedupe\\",
+    "fields": [
+      {
+        "name": "name",
+        "type": "Text"
+      }
+    ]
+  },
+  "items": [
+    {
+      "golden_pairs_count": 10
+    },
+    {
+      "golden_pairs_count": 25
+    },
+    {
+      "golden_pairs_count": 50
+    },
+    {
+      "golden_pairs_count": 100
+    },
+    {
+      "golden_pairs_count": 250
+    }
+  ]
+}
