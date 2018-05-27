@@ -226,8 +226,7 @@ for config_index, config_item in enumerate(config.items):
     add_data["config_item_index"] = config_index
     add_data["fields"] = config.common.fields_to_string()
 
-    result_eval = ev.evaluate_match_file(filename_result, index_perfect_match, get_pairs_from_linker(),
-                                         additional_data=add_data)
+    result_eval = ev.evaluate_match_file(filename_result, index_perfect_match, additional_data=add_data)
 
     ev.print_evaluate_result(result_eval, "Evaluation")
     ev.save_results(config.common.result_base_dir + "log.csv", result_eval)
