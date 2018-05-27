@@ -91,7 +91,7 @@ idx_match = tools.load_perfect_match_as_index(config.common.filename_perfect_mat
 
 # build a full index without the matches
 idx_full = rl.FullIndex().index(df_1, df_2)
-idx_distinct = sample_index(idx_full.difference(idx_match), len(idx_match) * 2)
+idx_distinct = sample_index(idx_full.difference(idx_match), len(idx_match) * 10)
 
 # run compare
 print("Compare matches")
