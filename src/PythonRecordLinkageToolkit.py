@@ -10,15 +10,37 @@ class Config_Item:
     """
     Config item class for PRLT
     """
+
     def __init__(self, json_item):
-        self.golden_pairs_count = json_item["golden_pairs_count"]
-        self.sorted_neighborhood_window = json_item["sorted_neighborhood_window"]
-        self.sorted_neighborhood_field_name = json_item["sorted_neighborhood_field_name"]
+        self.golden_pairs_count = json_item.get("golden_pairs_count", 50)
+        self.sorted_neighborhood_window = json_item.get("sorted_neighborhood_window", 9)
+        self.canopy_threshold_add = json_item.get("canopy_threshold_add", 0.5)
+        self.canopy_threshold_remove = json_item.get("canopy_threshold_remove", 0.7)
+        self.index_field_name = json_item.get("index_field_name", "")
+        self.index_type = json_item.get("index_type", "sorted_neighbourhood")
+        self.classifier_types = [x.lower() for x in json_item.get("classifier_types", ["svm"])]
+        if isinstance(self.classifier_types, str):
+            self.classifier_types = [self.classifier_types]
 
     def to_dict(self):
         return {"golden_pairs_count": self.golden_pairs_count,
-                "sorted_neighborhood_window": self.sorted_neighborhood_window,
-                "sorted_neighborhood_field_name": self.sorted_neighborhood_field_name}
+                "index_type": self.index_type,
+                "index_field_name": self.index_field_name,
+                "canopy_threshold_add": self.canopy_threshold_add,
+                "canopy_threshold_remove": self.canopy_threshold_remove,
+                "sorted_neighborhood_window": self.sorted_neighborhood_window}
+
+
+def classifier_abbreviation(classifier):
+    if isinstance(classifier, rl.SVMClassifier):
+        return "SVM"
+    if isinstance(classifier, rl.KMeansClassifier):
+        return "KM"
+    if isinstance(classifier, rl.NaiveBayesClassifier):
+        return "NB"
+    if isinstance(classifier, rl.LogisticRegressionClassifier):
+        return "LR"
+    return "??"
 
 
 def train_supervised_classifier(classifier):
@@ -70,18 +92,31 @@ def predict_and_save(classifier, filename_key, current_config_item, config_index
 
     # call the evaluation on the created matches
     add_data = current_config_item.to_dict()
-    add_data["classifier"] = type(classifier).__name__
+    add_data["config_name"] = config.common.config_name
     add_data["config_item_index"] = config_index
+    add_data["fields"] = config.common.fields_to_string()
+    add_data["classifier"] = type(classifier).__name__
+    add_data["classifier_abbreviation"] = classifier_abbreviation(classifier)
+    add_data["Indexed_pairs"] = pairs_index.size
+    add_data["Indexed_pairs_perfect_match"] = pairs_index.intersection(perfect_match_index).size
+
     result_eval = ev.evaluate_match_index(result_index, perfect_match_index, add_data)
     ev.print_evaluate_result(result_eval)
 
     ev.save_results(config.common.result_base_dir + "log.csv", result_eval)
 
+
 def create_list_of_random_elements(index, max_count):
     """
     extract max_count items from the index and returns them as list
     """
-    elements = index.tolist()
+
+    if isinstance(index, pd.core.index.MultiIndex):
+        # if index is a MultiIndex, convert it to list
+        elements = index.tolist()
+    else:
+        # otherwise create a copy of the list
+        elements = list(index)
     result = list()
 
     while len(result) < max_count and elements:
@@ -100,9 +135,12 @@ def create_golden_pairs(max_count):
     """
     assert (max_count < perfect_match_index.size), "golden_pairs_count is greater then the count of golden pairs"
 
-    # create match and distinct list
-    train_match = create_list_of_random_elements(features.index.intersection(perfect_match_index), max_count)
-    train_distinct = create_list_of_random_elements(features.index.difference(perfect_match_index), max_count)
+    # create full match and distinct list
+    full_index_match = features.index.intersection(perfect_match_index)
+    full_index_distinct = features.index.difference(perfect_match_index)
+
+    train_match = create_list_of_random_elements(full_index_match, max_count)
+    train_distinct = create_list_of_random_elements(full_index_distinct, max_count)
 
     res_pairs = pd.DataFrame(features, pd.MultiIndex.from_tuples(list(set().union(train_match, train_distinct))))
     res_match = pd.MultiIndex.from_tuples(list(train_match))
@@ -131,8 +169,20 @@ for index, config_item in enumerate(config.items):
     tools.init_random_with_seed()
 
     print("Indexing")
-    indexer = rl.SortedNeighbourhoodIndex(on=config_item.sorted_neighborhood_field_name, window=config_item.sorted_neighborhood_window)
-    # indexer = rl.FullIndex()
+    if config_item.index_type == "sorted_neighbourhood":
+        indexer = rl.SortedNeighbourhoodIndex(config_item.index_field_name,
+                                              window=config_item.sorted_neighborhood_window)
+    elif config_item.index_type == "block":
+        indexer = rl.BlockIndex(config_item.index_field_name)
+    elif config_item.index_type == "canopy":
+        indexer = tools.CanopyClusterIndex(config_item.index_field_name,
+                                           threshold_add=config_item.canopy_threshold_add,
+                                           threshold_remove=config_item.canopy_threshold_remove)
+    elif config_item.index_type == "full":
+        indexer = tools.FullIndex(config_item.index_field_name)
+    else:
+        raise ValueError("index_type {0} is invalid: must be sorted_neighbourhood, block, canopy or full".format(config_item.index_type))
+
     pairs_index = indexer.index(dfFile1, dfFile2)
 
     print("Comparing {0} Pairs".format(pairs_index.size))
@@ -148,9 +198,17 @@ for index, config_item in enumerate(config.items):
     print("Classification")
     print("")
 
-    predict_and_save(create_and_train_svm(), "svm", config_item, index)
-    predict_and_save(create_and_train_naive_bayes(), "nb", config_item, index)
-    predict_and_save(create_and_train_logistic_regression(), "lr", config_item, index)
-    predict_and_save(create_and_train_kmeans(), "km", config_item, index)
+    for classifier in config_item.classifier_types:
+        if classifier == "svm":
+            predict_and_save(create_and_train_svm(), "svm", config_item, index)
+        elif classifier == "kmeans":
+            predict_and_save(create_and_train_kmeans(), "km", config_item, index)
+        elif classifier == "naive_bayes":
+            predict_and_save(create_and_train_naive_bayes(), "nb", config_item, index)
+        elif classifier == "logistic_regression":
+            predict_and_save(create_and_train_logistic_regression(), "lr", config_item, index)
+        else:
+            raise ValueError("classifier_types {0} is invalid: must be kmeans, svm, naive_bayes or logistic_regression".format(
+                config_item.classifier_types))
 
 print('Time elapsed (hh:mm:ss.ms) {}'.format(datetime.now() - start_time))
