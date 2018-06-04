@@ -7,6 +7,8 @@ import sys
 import random as rnd
 import math
 from pathlib import Path
+from collections import defaultdict
+from recordlinkage.base import BaseIndexator
 
 class Config:
     """
@@ -240,3 +242,76 @@ def series_to_bins(series_match, series_distinct, bin_count):
 
 def save_csv(df, filename, index=True):
     df.to_csv(filename, index=index, decimal=',', sep=';')
+
+
+class CanopyClusterIndex(BaseIndexator):
+    """Canopy clustering for indexing"""
+
+    @staticmethod
+    def buildbigram(str):
+        result = set()
+        str = str.lower()
+        for i in range(len(str) - 1):
+            result.add(str[i:i + 2])
+        return result
+
+    @staticmethod
+    def sim_jacc(set1, set2):
+        union = len(set1.union(set2))
+        if union != 0:
+            return len(set1.intersection(set2)) / union
+        else:
+            return 0
+
+    def __init__(self,
+                 left_on=None,
+                 right_on=None,
+                 threshold_add=0.3,
+                 threshold_remove=0.8,
+                 **kwargs):
+        super(CanopyClusterIndex, self).__init__(**kwargs)
+
+        if right_on is None:
+            right_on = left_on
+
+        # variables to block on
+        self.left_on = left_on
+        self.right_on = right_on
+        self.threshold_add = threshold_add
+        self.threshold_remove = threshold_remove
+
+    def _link_index(self, df_a, df_b):
+        """Make pairs ."""
+
+        result = set()
+
+        # create the inverted index and bigram dictionary for df_b
+        data_dict = {}
+        inverted_index = defaultdict(list)
+        for index, row in df_b.iterrows():
+            bigrams = CanopyClusterIndex.buildbigram(row[self.right_on])
+            data_dict[index] = bigrams
+            for bigram_b in bigrams:
+                inverted_index[bigram_b].append(index)
+
+        # create the canopies
+        for idx_a, row in df_a.iterrows():
+            bigrams_a = CanopyClusterIndex.buildbigram(row[self.left_on])
+
+            # get all elements similar entries
+            similar = set()
+            for bigram_b in bigrams_a:
+                for idx_b in inverted_index[bigram_b]:
+                    similar.add(idx_b)
+
+            # calc the distances
+            for idx_b in similar:
+                if idx_b in data_dict:
+                    bigrams_b = data_dict[idx_b]
+                    sim = CanopyClusterIndex.sim_jacc(bigrams_a, bigrams_b)
+                    if sim > self.threshold_add:
+                        result.add((idx_a, idx_b))
+                        if sim > self.threshold_remove:
+                            del data_dict[idx_b]
+
+        return pd.MultiIndex.from_tuples(result, names=[df_a.index.name, df_b.index.name])
