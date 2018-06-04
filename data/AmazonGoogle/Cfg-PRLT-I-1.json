@@ -1,0 +1,45 @@
+{
+  "common": {
+    "base_dir": "..\\data\\AmazonGoogle\\",
+    "filename_1": "Amazon.csv",
+    "filename_2": "GoogleProducts.csv",
+    "filename_perfect_match": "Amzon_GoogleProducts_perfectMapping.csv",
+    "result_base_dir": "..\\data\\AmazonGoogle\\prlt\\",
+    "fields": [
+      {
+        "name": "name",
+        "type": "cosine"
+      }
+    ]
+  },
+  "items": [
+    {
+      "classifier_types": ["svm"],
+      "golden_pairs_count": 50,
+      "index_type": "sorted_neighbourhood",
+      "sorted_neighborhood_window": 3,
+      "index_field_name": "name"
+    },
+    {
+      "classifier_types": ["svm"],
+      "golden_pairs_count": 50,
+      "index_type": "sorted_neighbourhood",
+      "sorted_neighborhood_window": 9,
+      "index_field_name": "name"
+    },
+    {
+      "classifier_types": ["svm"],
+      "golden_pairs_count": 50,
+      "index_type": "sorted_neighbourhood",
+      "sorted_neighborhood_window": 27,
+      "index_field_name": "name"
+    },
+    {
+      "classifier_types": ["svm"],
+      "golden_pairs_count": 50,
+      "index_type": "sorted_neighbourhood",
+      "sorted_neighborhood_window": 81,
+      "index_field_name": "name"
+    }
+  ]
+}

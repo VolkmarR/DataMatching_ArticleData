@@ -1,0 +1,57 @@
+{
+  "common": {
+    "base_dir": "..\\data\\AmazonGoogle\\",
+    "filename_1": "Amazon.csv",
+    "filename_2": "GoogleProducts.csv",
+    "filename_perfect_match": "Amzon_GoogleProducts_perfectMapping.csv",
+    "result_base_dir": "..\\data\\AmazonGoogle\\prlt\\",
+    "fields": [
+      {
+        "name": "name",
+        "type": "cosine"
+      }
+    ]
+  },
+  "items": [
+    {
+      "classifier_types": ["svm"],
+      "golden_pairs_count": 50,
+      "index_type": "canopy",
+      "canopy_threshold_add": 0.4,
+      "canopy_threshold_remove": 0.6,
+      "index_field_name": "name"
+    },
+    {
+      "classifier_types": ["svm"],
+      "golden_pairs_count": 50,
+      "index_type": "canopy",
+      "canopy_threshold_add": 0.3,
+      "canopy_threshold_remove": 0.7,
+      "index_field_name": "name"
+    },
+    {
+      "classifier_types": ["svm"],
+      "golden_pairs_count": 50,
+      "index_type": "canopy",
+      "canopy_threshold_add": 0.25,
+      "canopy_threshold_remove": 0.8,
+      "index_field_name": "name"
+    },
+    {
+      "classifier_types": ["svm"],
+      "golden_pairs_count": 50,
+      "index_type": "canopy",
+      "canopy_threshold_add": 0.25,
+      "canopy_threshold_remove": 0.9,
+      "index_field_name": "name"
+    },
+    {
+      "classifier_types": ["svm"],
+      "golden_pairs_count": 50,
+      "index_type": "canopy",
+      "canopy_threshold_add": 0.2,
+      "canopy_threshold_remove": 0.9,
+      "index_field_name": "name"
+    }
+  ]
+}
