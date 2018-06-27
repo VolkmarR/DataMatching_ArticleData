@@ -26,3 +26,8 @@ The test scripts need a config file passed as command line argument to run. Exam
 This directory contains test data and test configuration files. 
 
 The test data was downloaded from the [Database Group Leipzig](https://dbs.uni-leipzig.de/en/research/projects/object_matching/fever/benchmark_datasets_for_entity_resolution). 
+
+## Reproducibility
+
+The tests call the *init_random_with_seed* method to set the random number generator to a fixed seed value. 
+Additionaly, the PYTHONHASHSEED environment variables must be set for the dedupe.py script. 
