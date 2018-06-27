@@ -1,27 +1,34 @@
 {
-	"common" : {
-		"base_dir" : "..\\data\\AbtBuySmall\\",
-		"filename_1" : "Abt.csv",
-		"filename_2" : "Buy.csv",
-		"filename_perfect_match" : "abt_buy_perfectMapping.csv",
-		"result_base_dir" : "..\\data\\AbtBuySmall\\prlt\\",
-		"fields" : [{
-				"name" : "name",
-				"type" : "smith_waterman"
-			}, {
-				"name" : "name",
-				"type" : "cosine"
-			}
-		]
-	},
-	"items" : [{
-			"golden_pairs_count" : 5,
-			"sorted_neighborhood_window" : 9,
-			"sorted_neighborhood_field_name": "name"
-		}, {
-			"golden_pairs_count" : 5,
-			"sorted_neighborhood_window" : 9,
-			"sorted_neighborhood_field_name": "name"
-		}
-	]
+  "common": {
+    "base_dir": "..\\data\\AbtBuySmall\\",
+    "filename_1": "Abt.csv",
+    "filename_2": "Buy.csv",
+    "filename_perfect_match": "abt_buy_perfectMapping.csv",
+    "result_base_dir": "..\\data\\AbtBuySmall\\prlt\\",
+    "fields": [
+      {
+        "name": "name",
+        "type": "smith_waterman"
+      },
+      {
+        "name": "name",
+        "type": "cosine"
+      }
+    ]
+  },
+  "items": [
+    {
+      "golden_pairs_count": 5,
+      "classifier_types": [
+        "svm",
+        "kmeans",
+        "naive_bayes",
+        "logistic_regression"
+      ],
+      "index_type": "canopy",
+      "index_field_name": "name",
+      "canopy_threshold_add": 0.25,
+      "canopy_threshold_remove": 0.9
+    }
+  ]
 }
